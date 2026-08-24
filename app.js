@@ -6,6 +6,8 @@ const STORAGE = {
   applications: 'dasi-space-v2-applications'
 };
 
+const PAGE_SIZE = 9;
+
 const appState = {
   spaces: [],
   favorites: new Set(),
@@ -20,14 +22,19 @@ const appState = {
     sort: 'recommended'
   },
   filteredSpaces: [],
+  page: 1,
   map: null,
   markers: []
 };
 
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', function () {
+  init().catch(function (error) {
+    console.error('초기화 실패', error);
+  });
+});
 
-function init() {
-  loadState();
+async function init() {
+  await loadState();
   populateOptions();
   renderDistrictChips();
   renderFeatured();
@@ -39,8 +46,35 @@ function init() {
   setMinimumVisitDate();
 }
 
-function loadState() {
-  appState.spaces = readStorage(STORAGE.spaces, INITIAL_SPACES).map(function (space) {
+// FastAPI 백엔드가 없거나(정적 서버로만 띄운 경우) 응답이 실패하면
+// data.js에 번들된 INITIAL_SPACES/COMMON_CODES로 조용히 대체한다.
+async function fetchJSON(path) {
+  const response = await fetch(path, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(path + ' -> HTTP ' + response.status);
+  return response.json();
+}
+
+async function loadState() {
+  let apiSpaces = null;
+  try {
+    apiSpaces = await fetchJSON('/api/v1/spaces');
+  } catch (error) {
+    console.warn('공간 데이터를 API에서 불러오지 못해 번들 데이터를 씁니다.', error);
+  }
+
+  try {
+    const codes = await fetchJSON('/api/v1/common-codes');
+    COMMON_CODES.USER_TYPES = codes.userTypes;
+    COMMON_CODES.CATEGORIES = codes.categories;
+    COMMON_CODES.DISTRICTS = codes.districts;
+    COMMON_CODES.STATUSES = codes.statuses;
+  } catch (error) {
+    console.warn('공통 코드를 API에서 불러오지 못해 번들 데이터를 씁니다.', error);
+  }
+
+  // localStorage에 저장된 값(운영센터에서 변경한 상태 등)이 있으면 그것을 우선한다.
+  // 첫 방문이라 저장된 값이 없을 때만 API 결과(없으면 번들 데이터)를 기본값으로 쓴다.
+  appState.spaces = readStorage(STORAGE.spaces, apiSpaces || INITIAL_SPACES).map(function (space) {
     return Object.assign({}, space);
   });
   appState.favorites = new Set(readStorage(STORAGE.favorites, []));
@@ -154,14 +188,61 @@ function renderCatalog() {
   document.getElementById('resultCount').textContent = appState.filteredSpaces.length;
   document.getElementById('mapSpaceCount').textContent = appState.filteredSpaces.length + '곳';
 
+  const totalPages = Math.max(1, Math.ceil(appState.filteredSpaces.length / PAGE_SIZE));
+  // 필터가 바뀌어 결과가 줄면 이전 페이지 번호가 범위를 벗어날 수 있다.
+  if (appState.page > totalPages) appState.page = totalPages;
+  if (appState.page < 1) appState.page = 1;
+
   if (!appState.filteredSpaces.length) {
     container.innerHTML = '<div class="empty-state"><strong>조건에 맞는 공간이 없어요.</strong><span>범위를 조금 넓혀 다시 찾아보세요.</span><br><button type="button" data-action="reset-filters">조건 초기화</button></div>';
   } else {
-    container.innerHTML = appState.filteredSpaces.map(createCard).join('');
+    const start = (appState.page - 1) * PAGE_SIZE;
+    const pageSpaces = appState.filteredSpaces.slice(start, start + PAGE_SIZE);
+    container.innerHTML = pageSpaces.map(createCard).join('');
   }
 
+  renderPagination(totalPages);
   updateFavoriteCount();
   updateMapMarkers(appState.filteredSpaces);
+}
+
+function renderPagination(totalPages) {
+  const nav = document.getElementById('spacePagination');
+  if (!nav) return;
+  if (totalPages <= 1) {
+    nav.innerHTML = '';
+    return;
+  }
+
+  const current = appState.page;
+  const pageNumberButton = function (page) {
+    return '<button type="button" data-page="' + page + '"' + (page === current ? ' class="active" aria-current="page"' : '') + '>' + page + '</button>';
+  };
+  const ellipsis = '<span class="pagination-ellipsis">…</span>';
+
+  // 페이지가 많아지면 앞/뒤/현재 주변만 보여주고 나머지는 …으로 줄인다.
+  const pages = [];
+  for (let page = 1; page <= totalPages; page++) {
+    if (page === 1 || page === totalPages || Math.abs(page - current) <= 1) {
+      pages.push(pageNumberButton(page));
+    } else if (pages[pages.length - 1] !== ellipsis) {
+      pages.push(ellipsis);
+    }
+  }
+
+  nav.innerHTML =
+    '<button type="button" data-page="' + (current - 1) + '" ' + (current === 1 ? 'disabled' : '') + ' aria-label="이전 페이지">‹</button>' +
+    pages.join('') +
+    '<button type="button" data-page="' + (current + 1) + '" ' + (current === totalPages ? 'disabled' : '') + ' aria-label="다음 페이지">›</button>';
+}
+
+function goToPage(page) {
+  const totalPages = Math.max(1, Math.ceil(appState.filteredSpaces.length / PAGE_SIZE));
+  page = Math.min(Math.max(1, page), totalPages);
+  if (page === appState.page) return;
+  appState.page = page;
+  renderCatalog();
+  document.getElementById('spaceGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function createCard(space) {
@@ -178,7 +259,9 @@ function createCard(space) {
         '<div class="card-category"><span>' + categorySymbol(space.category) + ' ' + space.categoryName.toUpperCase() + '</span><span>' + space.district + '</span></div>',
         '<h3>' + space.name + '</h3>',
         '<p class="card-address">' + space.address + '</p>',
-        '<div class="card-specs"><span>' + formatArea(space.area) + '</span><span>' + formatRent(space.monthlyRent) + '</span><span>' + (space.parking ? '주차 ' + space.parkingSpaces + '대' : '주차 불가') + '</span></div>',
+        '<div class="card-specs"><span>' + formatArea(space.area) + '</span><span>' + formatRent(space.monthlyRent) + '</span><span>' + (space.parking ? '주차 ' + space.parkingSpaces + '대' : '주차 불가') + '</span>' +
+          (space.lastTransaction ? '<span>실거래 ' + formatTransactionSummary(space.lastTransaction) + '</span>' : '') +
+        '</div>',
         '<div class="card-actions">',
           '<button type="button" data-action="detail" data-space-id="' + space.id + '">공간 자세히 보기</button>',
           '<button type="button" data-action="detail" data-space-id="' + space.id + '" aria-label="상세 보기">↗</button>',
@@ -203,9 +286,16 @@ function bindEvents() {
     const actionTarget = event.target.closest('[data-action]');
     const districtTarget = event.target.closest('[data-district]');
     const modalClose = event.target.closest('[data-close-modal]');
+    const pageTarget = event.target.closest('[data-page]');
+
+    if (pageTarget) {
+      goToPage(Number(pageTarget.dataset.page));
+      return;
+    }
 
     if (districtTarget) {
       appState.filters.district = districtTarget.dataset.district;
+      appState.page = 1;
       renderDistrictChips();
       renderCatalog();
       return;
@@ -232,16 +322,21 @@ function bindEvents() {
 
   document.getElementById('searchInput').addEventListener('input', function () {
     appState.filters.query = this.value.trim();
+    appState.page = 1;
     renderCatalog();
   });
 
-  document.getElementById('searchSubmit').addEventListener('click', renderCatalog);
+  document.getElementById('searchSubmit').addEventListener('click', function () {
+    appState.page = 1;
+    renderCatalog();
+  });
   document.getElementById('categoryFilter').addEventListener('change', applyControlFilters);
   document.getElementById('rentFilter').addEventListener('change', applyControlFilters);
   document.getElementById('areaFilter').addEventListener('change', applyControlFilters);
   document.getElementById('parkingFilter').addEventListener('change', applyControlFilters);
   document.getElementById('sortSelect').addEventListener('change', function () {
     appState.filters.sort = this.value;
+    appState.page = 1;
     renderCatalog();
   });
 
@@ -293,6 +388,7 @@ function applyControlFilters() {
   appState.filters.maxRent = Number(document.getElementById('rentFilter').value);
   appState.filters.minArea = Number(document.getElementById('areaFilter').value);
   appState.filters.parking = document.getElementById('parkingFilter').checked;
+  appState.page = 1;
   renderCatalog();
 }
 
@@ -321,6 +417,7 @@ function resetFilters() {
   document.getElementById('areaFilter').value = '0';
   document.getElementById('parkingFilter').checked = false;
   document.getElementById('sortSelect').value = 'recommended';
+  appState.page = 1;
   renderDistrictChips();
   renderCatalog();
 }
@@ -388,7 +485,7 @@ function openDetail(id) {
   const saved = appState.favorites.has(id);
   document.getElementById('detailContent').innerHTML = [
     '<div class="detail-hero">',
-      '<div class="detail-photo"><img src="' + space.photos[0] + '" alt="' + space.name + '"></div>',
+      '<div class="detail-photo" id="detailPhoto"><div id="detailRoadview" style="width:100%;height:100%"></div></div>',
       '<div class="detail-summary">',
         '<span class="category">' + categorySymbol(space.category) + ' ' + space.categoryName.toUpperCase() + ' · ' + getStatusName(space.status) + '</span>',
         '<h2>' + space.name + '</h2>',
@@ -406,10 +503,73 @@ function openDetail(id) {
     '</div>',
     '<div class="detail-body">',
       '<div><h3>공간 이야기</h3><p>' + space.description + '</p><h3>이 공간의 특징</h3><ul class="feature-list">' + space.features.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul></div>',
-      '<div><h3>시설 정보</h3><ul class="utility-list">' + space.utilities.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul><div class="support-box"><strong>리모델링·지원 정책</strong><p>' + space.remodelingSupport + '</p></div><p><strong>관리 기관</strong><br>' + space.managingAgency + '<br>' + space.agencyContact + '</p></div>',
+      '<div><h3>시설 정보</h3><ul class="utility-list">' + space.utilities.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul><div class="support-box"><strong>리모델링·지원 정책</strong><p>' + space.remodelingSupport + '</p></div>' +
+        '<div class="support-box"><strong>실거래 정보</strong><p>' + (
+          space.lastTransaction
+            ? formatTransactionSummary(space.lastTransaction) + ' · ' + space.lastTransaction.dealDate + ' · ' + space.lastTransaction.source
+            : '국토부 실거래가에서 확인된 거래가 없습니다(거래 없음 또는 지번 마스킹으로 확인 불가).'
+        ) + '</p></div>' +
+        '<p><strong>관리 기관</strong><br>' + space.managingAgency + '<br>' + space.agencyContact + '</p></div>',
     '</div>'
   ].join('');
   openModal('detailModal');
+  // 모달이 열려 실제 크기를 갖춘 다음 프레임에 로드뷰를 그린다 —
+  // 숨겨진(0px) 컨테이너에 바로 그리면 카카오 SDK가 캔버스 크기를 못 잡는다.
+  window.requestAnimationFrame(function () {
+    renderRoadview(space);
+  });
+}
+
+let kakaoSdkPromise = null;
+
+// Kakao JS 키는 서버 설정 엔드포인트에서 받아온다 — 정적 파일에 하드코딩하지 않는다.
+function loadKakaoSdk() {
+  if (kakaoSdkPromise) return kakaoSdkPromise;
+  kakaoSdkPromise = fetchJSON('/api/v1/config').then(function (config) {
+    if (!config.kakaoJsKey) throw new Error('카카오 JS 키가 설정되지 않았습니다.');
+    return new Promise(function (resolve, reject) {
+      const script = document.createElement('script');
+      script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=' + config.kakaoJsKey + '&autoload=false';
+      script.onload = function () {
+        kakao.maps.load(resolve);
+      };
+      script.onerror = function () {
+        reject(new Error('카카오 지도 SDK 로드 실패'));
+      };
+      document.head.appendChild(script);
+    });
+  });
+  return kakaoSdkPromise;
+}
+
+function showPhotoFallback(container, space, message) {
+  container.innerHTML = '<img src="' + space.photos[0] + '" alt="' + space.name + '">' +
+    '<span class="roadview-fallback-note">' + message + '</span>';
+}
+
+function renderRoadview(space) {
+  const container = document.getElementById('detailRoadview');
+  if (!container) return; // 그 사이 모달이 닫혔거나 다른 공간으로 바뀜
+
+  loadKakaoSdk().then(function () {
+    const roadview = new kakao.maps.Roadview(container);
+    const roadviewClient = new kakao.maps.RoadviewClient();
+    const position = new kakao.maps.LatLng(space.lat, space.lng);
+
+    roadviewClient.getNearestPanoId(position, 50, function (panoId) {
+      if (document.getElementById('detailRoadview') !== container) return; // 이미 다른 공간을 보고 있음
+      if (panoId === null) {
+        showPhotoFallback(container, space, '이 위치는 로드뷰를 제공하지 않습니다.');
+        return;
+      }
+      roadview.setPanoId(panoId, position);
+    });
+  }).catch(function (error) {
+    console.warn('로드뷰를 불러오지 못했습니다.', error);
+    if (document.getElementById('detailRoadview') === container) {
+      showPhotoFallback(container, space, '로드뷰를 불러오지 못했습니다.');
+    }
+  });
 }
 
 function openApplication(id) {
@@ -421,19 +581,33 @@ function openApplication(id) {
   openModal('applyModal');
 }
 
-function submitApplication(event) {
+async function submitApplication(event) {
   event.preventDefault();
-  const id = document.getElementById('applySpaceId').value;
-  appState.applications.unshift({
-    id: 'APP-' + Date.now(),
-    spaceId: id,
+  const payload = {
+    spaceId: document.getElementById('applySpaceId').value,
     name: document.getElementById('applicantName').value.trim(),
     phone: document.getElementById('applicantPhone').value.trim(),
     visitDate: document.getElementById('visitDate').value,
-    message: document.getElementById('applyMessage').value.trim(),
+    message: document.getElementById('applyMessage').value.trim()
+  };
+
+  let application = null;
+  try {
+    const response = await fetch('/api/v1/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (response.ok) application = await response.json();
+  } catch (error) {
+    console.warn('신청 접수를 서버에 저장하지 못해 이 기기에만 남깁니다.', error);
+  }
+
+  appState.applications.unshift(application || Object.assign({
+    id: 'APP-' + Date.now(),
     status: 'PENDING',
     createdAt: new Date().toISOString()
-  });
+  }, payload));
   saveState(STORAGE.applications);
   event.target.reset();
   setMinimumVisitDate();
@@ -658,11 +832,31 @@ function formatArea(area) {
 }
 
 function formatRent(rent) {
-  return rent === 0 ? '사용료 무료' : '월 ' + Number(rent).toLocaleString('ko-KR') + '만원';
+  // 0은 "무료"가 아니라 공공데이터 파이프라인이 채우지 못한 "정보 없음"일 수 있다.
+  return rent === 0 ? '임대료 정보 없음' : '월 ' + Number(rent).toLocaleString('ko-KR') + '만원';
 }
 
 function formatMoney(amount) {
   return amount === 0 ? '없음' : Number(amount).toLocaleString('ko-KR') + '만원';
+}
+
+const DEAL_TYPE_LABELS = {
+  SALE: '매매',
+  JEONSE: '전세',
+  MONTHLY_RENT: '월세'
+};
+
+function dealTypeLabel(dealType) {
+  return DEAL_TYPE_LABELS[dealType] || dealType;
+}
+
+function formatTransactionSummary(transaction) {
+  if (!transaction) return '';
+  let text = dealTypeLabel(transaction.dealType) + ' ' + Number(transaction.dealAmount).toLocaleString('ko-KR') + '만원';
+  if (transaction.dealType === 'MONTHLY_RENT' && transaction.monthlyRent != null) {
+    text += ' / 월 ' + Number(transaction.monthlyRent).toLocaleString('ko-KR') + '만원';
+  }
+  return text;
 }
 
 function toast(message, type) {

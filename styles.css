@@ -593,6 +593,40 @@ img {
   color: white;
 }
 
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.pagination button {
+  min-width: 36px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: #5c5953;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.pagination button.active {
+  border-color: var(--cobalt);
+  background: var(--cobalt);
+  color: white;
+}
+
+.pagination button:disabled {
+  opacity: 0.35;
+}
+
+.pagination .pagination-ellipsis {
+  padding: 0 4px;
+  color: #5c5953;
+}
+
 .filter-panel {
   display: grid;
   max-height: 0;
@@ -1383,6 +1417,7 @@ footer {
 }
 
 .detail-photo {
+  position: relative;
   min-height: 480px;
 }
 
@@ -1390,6 +1425,17 @@ footer {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.roadview-fallback-note {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  padding: 7px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .detail-summary {

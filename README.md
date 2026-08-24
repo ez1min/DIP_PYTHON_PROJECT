@@ -11,6 +11,7 @@
 - 추천 점수는 지역·용도·예산·면적·주차 가중치 규칙 기반(현재 프론트는 클라이언트에서 직접 계산, 백엔드에도 동일 로직이 별도로 존재 — 아래 참고)
 - 지도는 기본 Leaflet + OpenStreetMap(무료, 키 불필요). 카카오 로드뷰만 백엔드 `/api/v1/config`에서 받은 JS 키로 카카오맵 SDK를 동적 로드
 - 사용자가 브라우저에서 변경한 값(관심 공간, 신청 내역, 관리자가 바꾼 공간 상태)은 `localStorage`에도 저장되어 새로고침해도 유지됨
+- **데이터 파이프라인이 현재 두 벌 존재함(아직 통합 안 됨)**: 팀원이 만든 `project/data_pipeline`(CSV 기반, 실 API 연동은 TODO만 있고 미구현)과, 실제로 정부 공공데이터 API(건축물대장 HUB, VWorld, 국토부 실거래가)를 호출해서 135건의 진짜 후보 공간을 만들어낸 `project/binzip`이 따로 있음. `binzip`은 아직 FastAPI 백엔드(PostgreSQL)와 연결돼 있지 않고, 산출물(`DATA/spaces.json`)만 독립적으로 존재하는 상태.
 
 ## 디렉토리 구조
 
@@ -42,11 +43,25 @@ DIP_PYTHON_PROJECT/
     │   ├── migrations/                   # Alembic 스키마 버전 관리
     │   │   └── versions/
     │   └── tests/                        # pytest API 테스트
-    └── data_pipeline/                    # 원천 데이터 → DB 반영 파이프라인
-        ├── sample_raw.csv                # 정제 전 원본 예시 데이터
-        ├── clean_spaces.py               # 1차 정제 스크립트
-        ├── import_spaces.py              # 정제된 CSV를 검증 후 DB에 upsert
-        └── spaces_import_template.csv    # 실제 데이터 입력 시 따라야 할 컬럼 양식
+    ├── data_pipeline/                    # (팀원 작성) 원천 CSV → DB 반영 데모 파이프라인. 실 API 연동은 TODO 상태
+    │   ├── sample_raw.csv                # 정제 전 원본 예시 데이터
+    │   ├── clean_spaces.py               # 1차 정제 스크립트
+    │   ├── import_spaces.py              # 정제된 CSV를 검증 후 DB에 upsert
+    │   └── spaces_import_template.csv    # 실제 데이터 입력 시 따라야 할 컬럼 양식
+    └── binzip/                           # 실제 공공데이터 API로 동작하는 오프라인 ETL (건축HUB + VWorld + 실거래가)
+        ├── .env                          # VWORLD / GOVDATA / GOVDATA_DEC / KAKAO_JS 키 (git 미추적)
+        ├── pipeline.py                   # 전기사용량 → 건축물대장 → 지오코딩 → 실거래가 매칭 → Space 조립
+        ├── trade.py                      # 국토부 실거래가(상업업무용/공장창고용) 조회·인덱싱
+        ├── build_dataset.py              # 파이프라인 실행 → DATA/spaces.json, DATA/sync_logs.json 생성
+        ├── schemas/space.py              # Space 등 데이터 계약 (FE의 data.js와 필드 맞춤)
+        ├── tools/request.py              # 건축HUB·VWorld API 호출 래퍼
+        ├── tools/util.py                 # data_elec 원자료 로드/저사용량 필터
+        ├── tools/http_retry.py           # 재시도 포함 HTTP 요청
+        └── DATA/
+            ├── data_elec/*.json          # 대구 동별 전기 사용량 원자료 (직접 수집, 51개 동)
+            ├── spaces.json                # build_dataset.py 실행 결과 캐시 (현재 135건)
+            ├── sync_logs.json             # 실행 이력 로그
+            └── applications.json          # 신청 데이터 (현재 테스트용 더미 1건)
 ```
 
 > 이전에 루트에 있던 `ppt/` 기획 문서(pptx 2개)는 팀원 커밋에서 레포째로 삭제되어 이 브랜치에도 반영되어 있지 않습니다(의도적으로 삭제 반영함).
@@ -129,21 +144,32 @@ python import_spaces.py my_spaces.csv --commit
 - `import_spaces.py`는 `--commit`을 붙이지 않으면 항상 dry-run(검증만)이며, 성공/실패 건수와 오류 라인을 출력합니다.
 - 각 실행은 `DataSyncLog`(관리자 화면의 동기화 로그)에 기록됩니다.
 - 화면의 "공공데이터 동기화 ↻" 버튼(`app.js`의 `simulateDataSync()`)은 이 파이프라인과 **무관한 UI 목업**입니다. 1.2초 대기 후 토스트만 띄우고 실제로는 아무 데이터도 갱신하지 않습니다.
+- **진짜로 공공데이터를 다시 수집하려면** 대신 아래를 씁니다 (`requirements.txt`가 따로 없어서 `requests`, `pandas`, `pydantic`, `python-dotenv`는 직접 설치 필요):
+  ```bash
+  cd project
+  python -m binzip.build_dataset
+  ```
+  `binzip/.env`에 `VWORLD`, `GOVDATA_DEC`, `GOVDATA` 키가 있어야 동작하고, 실행할 때마다 정부 API를 대량 호출하므로(위 함수 단위 설명 참고) 시간이 걸립니다. 결과는 `binzip/DATA/spaces.json`에 덮어써지고 `binzip/DATA/sync_logs.json`에 이력이 남습니다.
 
 ## 데이터 출처
 
-- **현재 상태: 전부 시연/개발용 샘플 데이터입니다.** 실제 외부 API로 수집된 데이터가 아닙니다.
-  - 백엔드 최초 실행 시 `project/backend/seed_spaces.json`(공간 6건, `source_name: "프로젝트 시연 샘플"`)이 자동 적재됨
-  - 프론트 번들 `project/data.js`의 `INITIAL_SPACES`(12건)는 API 실패 시 폴백용으로 쓰이는, 사람이 직접 작성한 예시 데이터
-  - 두 데이터셋(6건 vs 12건)은 서로 다른 별개의 샘플이며 아직 하나로 합쳐지지 않았습니다 — 정식 데이터 반영 시 정리 필요
-- `data.js`의 `INITIAL_DATA_SYNC_LOGS`(대구 공공데이터 포털 API, 도시재생 웹 크롤러 등을 언급하는 로그 3건)는 화면 어디에서도 실제로 참조되지 않는 **죽은 데이터**입니다. "이런 식으로 연동될 예정"이라는 기획 의도만 남긴 플레이스홀더로 보입니다.
-- `project/data_pipeline/sample_raw.csv`도 수기로 작성한 예시 원본이며, 실 데이터가 아닙니다.
-- `clean_spaces.py` 주석에 명시된 향후 계획(미구현, TODO):
-  - 대구 공공데이터포털(data.go.kr) 등 공공데이터 API 실제 호출
-  - VWorld 등 좌표계/주소 기반 지오코딩 연동 (주소만 있는 행의 위경도 보완)
-  - 필요 시 허용된 대상 한정 수집기 추가
-- 즉, 현재 코드베이스에는 vworld·정부 API 엔드포인트로 실제 연동된 코드는 없습니다. `spaces_import_template.csv`의 `source_name`, `source_url` 컬럼에 실제 데이터를 넣을 때 출처를 기록하도록 양식만 준비된 상태입니다.
-- `main.py`의 `/health` 응답 `todo` 목록에도 `public_data_source`가 남아 있어, 공공데이터 연동이 아직 완료되지 않았음을 코드 상에서도 확인할 수 있습니다.
+실제 정부·공공 API를 호출하는 코드는 `project/binzip`에 있습니다. (이전 버전 문서에서 "연동 코드가 전혀 없다"고 썼던 건 `project/data_pipeline`만 보고 판단한 오류였습니다 — `binzip`을 반영하면서 바로잡습니다.)
+
+- **국토교통부 공공데이터포털(data.go.kr) — 건축물대장 HUB API**: `https://apis.data.go.kr/1613000/BldRgstHubService/getBrTitleInfo` (건축물 표제부: 면적, 층수, 주용도, 주차대수 등). 인증키는 `.env`의 `GOVDATA_DEC`. [`binzip/tools/request.py`]
+- **국토교통부 실거래가 공개시스템**: `RTMSDataSvcNrgTrade`(상업업무용), `RTMSDataSvcInduTrade`(공장·창고용) 두 엔드포인트를 시군구×월 단위로 호출해 최근 거래를 인메모리 인덱스로 매칭. 인증키는 `.env`의 `GOVDATA`. [`binzip/trade.py`]
+- **VWorld 주소→좌표 지오코딩 API**: `https://api.vworld.kr/req/address`. 인증키는 `.env`의 `VWORLD`. [`binzip/tools/request.py`의 `get_point_xy()`]
+- **전기 사용량 원자료**: `binzip/DATA/data_elec/*.json` — 대구 북구·수성구 등 51개 동 단위 전기 사용량 원자료 파일(약 8.7MB, `USGQTY`(사용량 kWh) 컬럼 포함). 어느 공공데이터셋에서 받았는지 파일 자체에는 출처 URL이 없고, 파일명(`01.전기에너지_구_동`)으로만 추정 가능 — 원 출처 링크는 팀원에게 확인 필요.
+- **카카오맵 JS SDK**: 지도(로드뷰) 렌더링용, 데이터 출처는 아님. 키는 `.env`의 `KAKAO_JS`(binzip 쪽) / 백엔드 `.env`의 `KAKAO_MAP_APP_KEY`(FastAPI 쪽) — 현재 두 군데에 따로 설정하게 되어 있음.
+
+이 파이프라인은 실제로 실행되어 결과가 남아 있습니다: `binzip/DATA/sync_logs.json`에 최근 실행 이력이 있고, 가장 최근 실행에서 **135건**의 유휴 공간 후보를 만들어 `binzip/DATA/spaces.json`에 저장했습니다.
+
+다만 임대료·보증금·사진·상세 설명처럼 공공데이터에 없는 필드는 실제 값을 지어내지 않고 플레이스홀더("정보 없음", 기본 이미지 1장)로 채웁니다(`pipeline.py`의 `map_to_space()` 주석 참고) — 그대로 화면에 노출하면 사용자가 실제 임대 정보로 오해할 수 있어 별도 데이터 소스(관리기관 입력 등)가 필요합니다.
+
+**아직 남은 것**:
+- `binzip`의 출력(`spaces.json`)은 FastAPI/PostgreSQL 백엔드와 연결돼 있지 않습니다. 지금은 `project/backend`가 `seed_spaces.json`(6건, `source_name: "프로젝트 시연 샘플"`)을, 프론트 `project/data.js`가 `INITIAL_SPACES`(12건)를 각각 따로 씁니다 — 세 데이터셋(6건 / 12건 / 135건)이 전부 다르고 아직 하나로 합쳐지지 않았습니다.
+- `data.js`의 `INITIAL_DATA_SYNC_LOGS`(대구 공공데이터 포털 API, 도시재생 웹 크롤러 등을 언급하는 로그 3건)는 화면에서 실제로 참조되지 않는 **죽은 데이터**입니다 — `binzip`이 진짜로 하는 일을 미리 흉내만 낸 플레이스홀더로 보입니다.
+- `project/data_pipeline`(팀원 작성, CSV 기반) 쪽 `clean_spaces.py` 주석에는 "대구 공공데이터 API 실제 호출"이 여전히 TODO로 남아 있는데, 사실상 `binzip`이 그 역할을 이미 하고 있는 셈입니다. 두 파이프라인을 합칠지 정리가 필요합니다.
+- `main.py`(`project/backend`)의 `/health` 응답 `todo` 목록에도 `public_data_source`가 남아 있어, 백엔드 입장에서는 아직 공공데이터 연동이 안 된 것으로 표시됩니다.
 
 ## 데이터 파이프라인 설명 (함수 단위)
 
@@ -203,7 +229,45 @@ submitRecommendation(event)                                   [app.js, 프론트
 ```
 같은 가중치(15/25/30/20/10/8/5)로 `calculate_suitability()` [backend/recommendation.py]가 서버 쪽에도 존재하고, `routers/recommendations.py`가 이를 API로 노출합니다. 다만 현재 프론트(`submitRecommendation`)는 이 API를 호출하지 않고 **클라이언트에서 직접** 같은 로직을 다시 계산합니다 — 로직 두 벌이 중복돼 있는 상태입니다.
 
-### 정식 데이터 반영 파이프라인 (CSV → PostgreSQL)
+### 실제 공공데이터 파이프라인 (`binzip`, 함수 단위)
+
+```
+실행: cd project && python -m binzip.build_dataset
+  build_dataset.main()                                          [binzip/build_dataset.py]
+    → build_spaces()                                             [binzip/pipeline.py]
+        1) collect_candidate_parcels(utils, code_cols, kwh_threshold=5)
+           - util.get_data_dir(): binzip/DATA/data_elec/*.json 파일 목록
+           - util.load_df(path): JSON의 "Data" 배열을 DataFrame으로
+           - util.filter(5, df): USGQTY(사용량 kWh) <= 5 인 행만 남김
+             → "전기를 거의 안 쓴다 = 사람이 안 산다"를 빈집 후보 필터로 사용
+           - 시군구/법정동/번/지 코드 4종(SGG_CD, STDG_CD, MNO, SNO) 중복 제거
+        2) trade.build_trade_index(sgg_codes, GOVDATA_DEC, months_back=24)
+           - 후보 필지가 속한 시군구 × 최근 24개월 × 실거래가 엔드포인트 2종을
+             (시군구, 월) 단위로만 호출 (필지 수와 무관 — 지번 필터가 API에 없어서)
+           - trade._fetch_month(): 국토부 실거래가(RTMSDataSvcNrgTrade/InduTrade) 호출
+           - 지번이 마스킹("1***")된 거래는 매칭 불가라 인덱스에서 제외
+           - 같은 필지가 여러 번 거래됐으면 최신 거래만 유지
+        3) 후보 필지마다:
+           - request.get_Building_Register(sgg, stdg, mno, sno, GOVDATA_DEC)
+             → 건축HUB getBrTitleInfo 호출 (면적/층수/주용도/주차대수 등)
+           - request.extract_items(payload): 응답에서 item 목록만 추출
+           - map_to_space(item, seq, geocode, trade_index)             [pipeline.py]
+             - request.get_point_xy(address, VWORLD): 도로명주소로 지오코딩,
+               실패하면 지번주소로 재시도
+             - guess_category(): 건축물 주용도 텍스트 → STARTUP/SHOP/OFFICE/... 키워드 매핑
+             - parse_district(): 주소에서 대구 9개 구·군 중 하나 추출
+             - find_transaction(): platPlc(지번주소)로 위 실거래가 인덱스에서 최근 거래 조회
+             - 임대료/보증금/사진/설명 등 공공데이터에 없는 값은 실제 값을 지어내지 않고
+               "정보 없음"류 플레이스홀더로 채움
+             → Space(Pydantic) 한 건 완성
+    → DATA/spaces.json 에 전체 저장, DATA/sync_logs.json 에 실행 이력 append
+```
+
+- 인증키 3종은 `binzip/.env`에서 로드 (`load_dotenv`): `VWORLD`(지오코딩), `GOVDATA_DEC`(건축HUB), `GOVDATA`(실거래가, `trade.build_trade_index` 인자로 전달).
+- API 호출마다 `delay`(기본 0.1~0.15초)를 둬서 공공데이터 API 호출 제한을 피함.
+- 결과 `spaces.json`은 프론트(`project/data.js`)와 필드 이름을 맞춘 camelCase로 직렬화됩니다(`schemas/space.py`의 `Space` 모델, `to_camel` alias). 아직 FastAPI가 이 파일을 읽어서 서빙하는 코드는 없어서, 지금은 수동으로 확인하거나 프론트 쪽에 연결하는 작업이 남아 있습니다.
+
+### (팀원 작성, 별도) CSV → PostgreSQL 데모 파이프라인
 
 ```
 원본 CSV (project/data_pipeline/sample_raw.csv 또는 실제 수집 CSV)

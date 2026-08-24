@@ -1,0 +1,21 @@
+# Python virtual environments
+.venv/
+venv/
+
+# Python-generated cache and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local secrets and runtime data
+.env
+*.db
+*.sqlite3
+
+# Editor and operating-system metadata
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

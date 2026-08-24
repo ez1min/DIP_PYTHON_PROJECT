@@ -11,7 +11,16 @@ from fastapi.responses import FileResponse
 
 from backend.config import PROJECT_DIR, get_settings
 from backend.database import database_is_ready, initialize_database
-from backend.routers import admin, applications, auth, favorites, recommendations, spaces, users
+from backend.routers import (
+    admin,
+    applications,
+    auth,
+    catalog,
+    favorites,
+    recommendations,
+    spaces,
+    users,
+)
 
 
 settings = get_settings()
@@ -54,6 +63,7 @@ async def security_headers(request: Request, call_next):
 app.include_router(auth.router, prefix=settings.api_prefix)
 app.include_router(users.router, prefix=settings.api_prefix)
 app.include_router(users.admin_router, prefix=settings.api_prefix)
+app.include_router(catalog.router, prefix=settings.api_prefix)
 app.include_router(spaces.router, prefix=settings.api_prefix)
 app.include_router(favorites.router, prefix=settings.api_prefix)
 app.include_router(applications.router, prefix=settings.api_prefix)
@@ -86,8 +96,9 @@ def health() -> dict:
             "admin_application_review",
             "admin_space_management",
             "database_catalog",
+            "public_data_catalog",
         ],
-        "todo": ["public_data_source", "kakao_map_app_key", "production_deployment"],
+        "todo": ["kakao_map_app_key", "production_deployment"],
     }
 
 
@@ -113,3 +124,8 @@ def frontend_styles() -> FileResponse:
 @app.get("/app.js", include_in_schema=False)
 def frontend_app() -> FileResponse:
     return FileResponse(PROJECT_DIR / "app.js", media_type="text/javascript")
+
+
+@app.get("/data.js", include_in_schema=False)
+def frontend_data() -> FileResponse:
+    return FileResponse(PROJECT_DIR / "data.js", media_type="text/javascript")

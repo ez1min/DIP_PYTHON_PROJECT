@@ -23,14 +23,10 @@ from datetime import date
 from dotenv import load_dotenv
 
 from binzip import trade
+from binzip.catalog_photos import curated_placeholder_photos
 from binzip.schemas import Category, District, Space, TransactionInfo
 from binzip.tools.request import request
 from binzip.tools.util import util
-
-PLACEHOLDER_PHOTO = (
-    "https://images.unsplash.com/photo-1494526585095-c41746248156"
-    "?auto=format&fit=crop&w=1000&q=80"
-)
 
 # 건축물 주용도 텍스트 -> 프론트 카테고리 코드 휴리스틱.
 # 공공데이터에 카테고리 개념이 없어 주용도명 키워드로 근사한다.
@@ -155,7 +151,7 @@ def map_to_space(item: dict, seq: int, geocode, trade_index: dict | None = None)
         remodeling_support="",
         managing_agency="정보 없음 (공공데이터 미제공)",
         agency_contact="-",
-        photos=[PLACEHOLDER_PHOTO],
+        photos=curated_placeholder_photos(seq),
         floor=build_floor_text(item),
         structure=item.get("strctCdNm") or "",
         parking=parking_count > 0,

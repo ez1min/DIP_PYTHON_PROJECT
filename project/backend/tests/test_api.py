@@ -11,24 +11,52 @@ def test_frontend_is_served_without_exposing_project_files(client: TestClient) -
     assert index.status_code == 200
     assert index.headers["content-type"].startswith("text/html")
     assert "다시, 공간" in index.text
-    assert 'id="authLoginButton"' in index.text
-    assert 'id="loginForm"' in index.text
-    assert 'id="signupForm"' in index.text
-    assert 'id="myPageModal"' in index.text
-    assert 'id="preferenceForm"' in index.text
+    assert 'id="districtChips"' in index.text
+    assert 'id="spaceGrid"' in index.text
+    assert 'id="detailModal"' in index.text
+    assert 'id="authModal"' in index.text
+    assert 'id="accountModal"' in index.text
 
-    for asset in ("/styles.css", "/app.js"):
+    for asset in ("/styles.css", "/data.js", "/app.js"):
         assert client.get(asset).status_code == 200
-    assert client.get("/data.js").status_code == 404
 
     app_script = client.get("/app.js").text
+    assert "async function loadState" in app_script
+    assert "function renderDistrictChips" in app_script
+    assert "function openDetail" in app_script
     assert "async function submitLogin" in app_script
-    assert "async function submitSignup" in app_script
-    assert "async function openMyPage" in app_script
-    assert "async function loadSuitability" in app_script
+    assert "async function loadMemberData" in app_script
 
     assert client.get("/backend/main.py").status_code == 404
     assert client.get("/.env").status_code == 404
+
+
+def test_public_catalog_matches_pipeline_output(client: TestClient) -> None:
+    response = client.get("/api/v1/catalog/spaces")
+    assert response.status_code == 200
+
+    spaces = response.json()
+    assert len(spaces) == 135
+    assert sum(space["district"] == "북구" for space in spaces) == 107
+    assert sum(space["district"] == "수성구" for space in spaces) == 28
+    assert spaces[118]["id"] == "SPC-P119"
+    assert spaces[118]["name"] == "수성구 유휴 건축물 (공동주택)"
+    assert len({space["photos"][0] for space in spaces}) == 32
+    assert all(len(space["photos"]) == 3 for space in spaces)
+
+    codes = client.get("/api/v1/catalog/common-codes")
+    assert codes.status_code == 200
+    assert codes.json()["districts"] == [
+        "중구",
+        "동구",
+        "서구",
+        "남구",
+        "북구",
+        "수성구",
+        "달서구",
+        "달성군",
+        "군위군",
+    ]
 
 
 def test_database_seed_and_space_filter(client: TestClient) -> None:
@@ -224,6 +252,41 @@ def test_mypage_preferences_suitability_and_user_activity(client: TestClient) ->
     cancelled = client.patch(f"/api/v1/applications/{application_id}/cancel", headers=headers)
     assert cancelled.status_code == 200
     assert cancelled.json()["status"] == "CANCELLED"
+
+
+def test_catalog_space_can_be_favorited_and_applied_for(client: TestClient) -> None:
+    email = f"catalog-{uuid4().hex}@example.com"
+    password = "catalog-password-1234"
+    client.post(
+        "/api/v1/auth/signup",
+        json={
+            "email": email,
+            "password": password,
+            "name": "카탈로그 사용자",
+            "phone": "010-2345-6789",
+        },
+    )
+    login = client.post("/api/v1/auth/login", json={"email": email, "password": password})
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    favorite = client.post("/api/v1/favorites/SPC-P119", headers=headers)
+    assert favorite.status_code == 201
+    assert favorite.json()["space"]["name"] == "수성구 유휴 건축물 (공동주택)"
+
+    application = client.post(
+        "/api/v1/applications",
+        headers=headers,
+        json={
+            "space_id": "SPC-P119",
+            "visit_date": "2030-02-20",
+            "application_type": "VISIT",
+            "applicant_name": "카탈로그 사용자",
+            "applicant_phone": "010-2345-6789",
+            "message": "공간 내부를 확인하고 활용 계획을 구체화하고 싶습니다.",
+        },
+    )
+    assert application.status_code == 201
+    assert application.json()["space"]["id"] == "SPC-P119"
 
 
 def test_admin_application_review_and_application_rules(client: TestClient) -> None:

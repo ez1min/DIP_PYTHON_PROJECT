@@ -27,6 +27,10 @@
     </nav>
 
     <div class="header-actions">
+      <button class="account-button" id="accountButton" type="button" data-action="open-auth">
+        <span class="account-avatar" id="accountAvatar" aria-hidden="true">○</span>
+        <span id="accountLabel">로그인</span>
+      </button>
       <button class="saved-button" type="button" data-action="open-favorites">
         저장한 공간 <span id="favoriteCount">0</span>
       </button>
@@ -304,6 +308,86 @@
         <label><span>공간에서 하고 싶은 일</span><textarea id="applyMessage" required rows="4" placeholder="활용 목적과 계획을 간단히 적어주세요."></textarea></label>
         <button class="button button-dark wide" type="submit">신청서 보내기 <span>→</span></button>
       </form>
+    </div>
+  </div>
+
+  <div class="modal" id="authModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="로그인 및 회원가입">
+    <div class="modal-shell auth-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="닫기">×</button>
+      <div class="auth-intro">
+        <span class="modal-label">MEMBER ACCESS</span>
+        <h2>공간과 계획을<br>이어두세요.</h2>
+        <p>저장한 공간과 방문 신청, 추천 조건을 계정에서 관리합니다.</p>
+      </div>
+      <div class="auth-panel">
+        <div class="auth-tabs" role="tablist" aria-label="계정 메뉴">
+          <button class="active" type="button" data-auth-tab="login" role="tab" aria-selected="true">로그인</button>
+          <button type="button" data-auth-tab="signup" role="tab" aria-selected="false">회원가입</button>
+        </div>
+        <p class="form-message error" id="authError" hidden></p>
+        <form class="account-form" id="loginForm">
+          <label><span>이메일</span><input id="loginEmail" type="email" autocomplete="email" required placeholder="name@example.com"></label>
+          <label><span>비밀번호</span><input id="loginPassword" type="password" autocomplete="current-password" required placeholder="비밀번호"></label>
+          <button class="button button-cobalt wide" type="submit">로그인 <span>→</span></button>
+        </form>
+        <form class="account-form" id="signupForm" hidden>
+          <div class="form-grid">
+            <label><span>이름</span><input id="signupName" autocomplete="name" required minlength="2" placeholder="이름"></label>
+            <label><span>연락처</span><input id="signupPhone" type="tel" autocomplete="tel" required placeholder="010-0000-0000"></label>
+          </div>
+          <label><span>이메일</span><input id="signupEmail" type="email" autocomplete="email" required placeholder="name@example.com"></label>
+          <label><span>비밀번호</span><input id="signupPassword" type="password" autocomplete="new-password" required minlength="8" placeholder="8자 이상"></label>
+          <button class="button button-dark wide" type="submit">계정 만들기 <span>→</span></button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="accountModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="내 정보">
+    <div class="modal-shell account-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="닫기">×</button>
+      <header class="account-heading">
+        <div>
+          <span class="modal-label">MY SPACE</span>
+          <h2><span id="accountName">사용자</span>님의 공간</h2>
+          <p id="accountEmail"></p>
+        </div>
+        <button class="logout-button" type="button" data-action="logout">로그아웃</button>
+      </header>
+
+      <div class="account-columns">
+        <section class="account-section">
+          <div class="section-title"><span>01</span><h3>내 정보</h3></div>
+          <form class="account-form" id="profileForm">
+            <label><span>이름</span><input id="profileName" required minlength="2"></label>
+            <label><span>이메일</span><input id="profileEmail" type="email" disabled></label>
+            <label><span>연락처</span><input id="profilePhone" type="tel"></label>
+            <button class="form-submit" type="submit">정보 저장 →</button>
+          </form>
+        </section>
+
+        <section class="account-section">
+          <div class="section-title"><span>02</span><h3>추천 조건</h3></div>
+          <form class="account-form" id="preferenceForm">
+            <div class="form-grid">
+              <label><span>선호 지역</span><select id="preferenceDistrict"><option value="">대구 전역</option></select></label>
+              <label><span>활용 목적</span><select id="preferenceCategory"><option value="">선택 안 함</option></select></label>
+            </div>
+            <div class="form-grid">
+              <label><span>월 최대 예산</span><input id="preferenceBudget" type="number" min="0" step="10" placeholder="만원"></label>
+              <label><span>최소 면적</span><input id="preferenceArea" type="number" min="0" step="1" placeholder="㎡"></label>
+            </div>
+            <label class="account-check"><input id="preferenceParking" type="checkbox"><span>주차 가능한 공간만 추천</span></label>
+            <label><span>공간에서 할 일</span><textarea id="preferenceSummary" rows="3" maxlength="1000" placeholder="계획을 간단히 적어주세요."></textarea></label>
+            <button class="form-submit" type="submit">조건 저장 →</button>
+          </form>
+        </section>
+      </div>
+
+      <section class="account-section applications-section">
+        <div class="section-title"><span>03</span><h3>방문·이용 신청</h3></div>
+        <div class="application-list" id="myApplications"></div>
+      </section>
     </div>
   </div>
 

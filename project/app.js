@@ -1,9 +1,10 @@
 /* 다시, 공간 — Project 2 interaction layer */
 
 const STORAGE = {
-  favorites: 'dasi-space-v2-favorites',
-  spaces: 'dasi-space-v2-spaces',
-  applications: 'dasi-space-v2-applications'
+  favorites: 'dasi-space-v3-favorites',
+  spaces: 'dasi-space-v4-spaces',
+  applications: 'dasi-space-v3-applications',
+  token: 'dasi-space-v3-access-token'
 };
 
 const PAGE_SIZE = 9;
@@ -12,6 +13,12 @@ const appState = {
   spaces: [],
   favorites: new Set(),
   applications: [],
+  auth: {
+    token: null,
+    user: null,
+    preferences: null
+  },
+  pendingAction: null,
   filters: {
     query: '',
     district: 'ALL',
@@ -36,6 +43,7 @@ document.addEventListener('DOMContentLoaded', function () {
 async function init() {
   await loadState();
   populateOptions();
+  await restoreSession();
   renderDistrictChips();
   renderFeatured();
   renderCatalog();
@@ -54,16 +62,58 @@ async function fetchJSON(path) {
   return response.json();
 }
 
+async function apiRequest(path, options) {
+  const requestOptions = Object.assign({}, options || {});
+  requestOptions.headers = Object.assign({ Accept: 'application/json' }, requestOptions.headers || {});
+  if (requestOptions.body && !requestOptions.headers['Content-Type']) {
+    requestOptions.headers['Content-Type'] = 'application/json';
+  }
+  if (appState.auth.token) {
+    requestOptions.headers.Authorization = 'Bearer ' + appState.auth.token;
+  }
+
+  const response = await fetch(path, requestOptions);
+  if (!response.ok) {
+    let message = '요청을 처리하지 못했습니다.';
+    try {
+      const error = await response.json();
+      if (typeof error.detail === 'string') message = error.detail;
+      if (Array.isArray(error.detail) && error.detail[0]) message = error.detail[0].msg;
+    } catch (error) {
+      message = path + ' -> HTTP ' + response.status;
+    }
+    if (response.status === 401 && appState.auth.token) clearSession(true);
+    throw new Error(message);
+  }
+  return response.status === 204 ? null : response.json();
+}
+
+async function restoreSession() {
+  appState.auth.token = sessionStorage.getItem(STORAGE.token);
+  if (!appState.auth.token) {
+    updateAccountButton();
+    return;
+  }
+  try {
+    appState.auth.user = await apiRequest('/api/v1/users/me');
+    await loadMemberData();
+  } catch (error) {
+    console.warn('로그인 세션을 복원하지 못했습니다.', error);
+    clearSession(false);
+  }
+  updateAccountButton();
+}
+
 async function loadState() {
   let apiSpaces = null;
   try {
-    apiSpaces = await fetchJSON('/api/v1/spaces');
+    apiSpaces = await fetchJSON('/api/v1/catalog/spaces');
   } catch (error) {
     console.warn('공간 데이터를 API에서 불러오지 못해 번들 데이터를 씁니다.', error);
   }
 
   try {
-    const codes = await fetchJSON('/api/v1/common-codes');
+    const codes = await fetchJSON('/api/v1/catalog/common-codes');
     COMMON_CODES.USER_TYPES = codes.userTypes;
     COMMON_CODES.CATEGORIES = codes.categories;
     COMMON_CODES.DISTRICTS = codes.districts;
@@ -107,14 +157,18 @@ function populateOptions() {
   const categoryFilter = document.getElementById('categoryFilter');
   const recommendPurpose = document.getElementById('recommendPurpose');
   const recommendDistrict = document.getElementById('recommendDistrict');
+  const preferenceCategory = document.getElementById('preferenceCategory');
+  const preferenceDistrict = document.getElementById('preferenceDistrict');
 
   COMMON_CODES.CATEGORIES.forEach(function (category) {
     categoryFilter.insertAdjacentHTML('beforeend', '<option value="' + category.code + '">' + category.name + '</option>');
     recommendPurpose.insertAdjacentHTML('beforeend', '<option value="' + category.code + '">' + category.name + '</option>');
+    preferenceCategory.insertAdjacentHTML('beforeend', '<option value="' + category.code + '">' + category.name + '</option>');
   });
 
   COMMON_CODES.DISTRICTS.forEach(function (district) {
     recommendDistrict.insertAdjacentHTML('beforeend', '<option value="' + district + '">' + district + '</option>');
+    preferenceDistrict.insertAdjacentHTML('beforeend', '<option value="' + district + '">' + district + '</option>');
   });
 }
 
@@ -345,7 +399,15 @@ function bindEvents() {
   document.getElementById('drawerBackdrop').addEventListener('click', closeFavorites);
   document.getElementById('recommendForm').addEventListener('submit', submitRecommendation);
   document.getElementById('applyForm').addEventListener('submit', submitApplication);
+  document.getElementById('loginForm').addEventListener('submit', submitLogin);
+  document.getElementById('signupForm').addEventListener('submit', submitSignup);
+  document.getElementById('profileForm').addEventListener('submit', submitProfile);
+  document.getElementById('preferenceForm').addEventListener('submit', submitPreferences);
   document.getElementById('syncData').addEventListener('click', simulateDataSync);
+
+  document.querySelectorAll('[data-auth-tab]').forEach(function (button) {
+    button.addEventListener('click', function () { selectAuthTab(this.dataset.authTab); });
+  });
 
   document.getElementById('adminSpaceRows').addEventListener('change', function (event) {
     if (!event.target.matches('[data-status-space]')) return;
@@ -374,7 +436,11 @@ function handleAction(action, element) {
     'apply': function () { openApplication(id); },
     'open-favorites': openFavorites,
     'close-favorites': closeFavorites,
-    'open-recommend': function () { openModal('recommendModal'); },
+    'open-recommend': openRecommend,
+    'open-auth': function () { openAuth('login'); },
+    'open-account': openAccount,
+    'logout': logout,
+    'cancel-application': function () { cancelApplication(Number(element.dataset.applicationId)); },
     'open-admin': openAdmin,
     'show-map': showMap,
     'scroll-discover': function () { scrollToId('discover'); },
@@ -422,19 +488,35 @@ function resetFilters() {
   renderCatalog();
 }
 
-function toggleFavorite(id) {
+async function toggleFavorite(id) {
   if (!id) return;
-  if (appState.favorites.has(id)) {
+  const wasSaved = appState.favorites.has(id);
+  if (wasSaved) {
     appState.favorites.delete(id);
-    toast('저장한 공간에서 제외했습니다.');
   } else {
     appState.favorites.add(id);
-    toast('관심 공간으로 저장했습니다.', 'success');
   }
-  saveState(STORAGE.favorites);
   renderCatalog();
   renderFeatured();
   renderFavorites();
+
+  if (!appState.auth.user) {
+    saveState(STORAGE.favorites);
+    toast(wasSaved ? '저장한 공간에서 제외했습니다.' : '관심 공간으로 저장했습니다.', wasSaved ? '' : 'success');
+    return;
+  }
+
+  try {
+    await apiRequest('/api/v1/favorites/' + encodeURIComponent(id), { method: wasSaved ? 'DELETE' : 'POST' });
+    toast(wasSaved ? '저장한 공간에서 제외했습니다.' : '계정에 관심 공간을 저장했습니다.', wasSaved ? '' : 'success');
+  } catch (error) {
+    if (wasSaved) appState.favorites.add(id);
+    else appState.favorites.delete(id);
+    renderCatalog();
+    renderFeatured();
+    renderFavorites();
+    toast(error.message);
+  }
 }
 
 function updateFavoriteCount() {
@@ -475,6 +557,252 @@ function closeFavorites() {
   document.getElementById('favoritesDrawer').setAttribute('aria-hidden', 'true');
   document.getElementById('drawerBackdrop').classList.remove('open');
   if (!document.querySelector('.modal.open')) document.body.classList.remove('modal-open');
+}
+
+function updateAccountButton() {
+  const button = document.getElementById('accountButton');
+  const label = document.getElementById('accountLabel');
+  const avatar = document.getElementById('accountAvatar');
+  if (!button || !label || !avatar) return;
+  if (appState.auth.user) {
+    button.dataset.action = 'open-account';
+    button.classList.add('authenticated');
+    label.textContent = appState.auth.user.name + '님';
+    avatar.textContent = appState.auth.user.name.slice(0, 1);
+  } else {
+    button.dataset.action = 'open-auth';
+    button.classList.remove('authenticated');
+    label.textContent = '로그인';
+    avatar.textContent = '○';
+  }
+}
+
+function openAuth(tab) {
+  selectAuthTab(tab || 'login');
+  document.getElementById('authError').hidden = true;
+  openModal('authModal');
+}
+
+function selectAuthTab(tab) {
+  const loginSelected = tab !== 'signup';
+  document.getElementById('loginForm').hidden = !loginSelected;
+  document.getElementById('signupForm').hidden = loginSelected;
+  document.querySelectorAll('[data-auth-tab]').forEach(function (button) {
+    const selected = button.dataset.authTab === (loginSelected ? 'login' : 'signup');
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-selected', String(selected));
+  });
+  document.getElementById('authError').hidden = true;
+}
+
+function showAuthError(error) {
+  const box = document.getElementById('authError');
+  box.textContent = error.message || String(error);
+  box.hidden = false;
+}
+
+async function submitLogin(event) {
+  event.preventDefault();
+  const submit = event.target.querySelector('[type="submit"]');
+  submit.disabled = true;
+  try {
+    await loginWithCredentials(
+      document.getElementById('loginEmail').value.trim(),
+      document.getElementById('loginPassword').value
+    );
+  } catch (error) {
+    showAuthError(error);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function submitSignup(event) {
+  event.preventDefault();
+  const submit = event.target.querySelector('[type="submit"]');
+  const email = document.getElementById('signupEmail').value.trim();
+  const password = document.getElementById('signupPassword').value;
+  submit.disabled = true;
+  try {
+    await apiRequest('/api/v1/auth/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        name: document.getElementById('signupName').value.trim(),
+        phone: document.getElementById('signupPhone').value.trim()
+      })
+    });
+    await loginWithCredentials(email, password);
+    event.target.reset();
+    toast('회원가입과 로그인이 완료됐습니다.', 'success');
+  } catch (error) {
+    showAuthError(error);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function loginWithCredentials(email, password) {
+  const guestFavorites = Array.from(appState.favorites);
+  const token = await apiRequest('/api/v1/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: email, password: password })
+  });
+  appState.auth.token = token.access_token;
+  sessionStorage.setItem(STORAGE.token, token.access_token);
+  appState.auth.user = await apiRequest('/api/v1/users/me');
+
+  await Promise.allSettled(guestFavorites.map(function (spaceId) {
+    return apiRequest('/api/v1/favorites/' + encodeURIComponent(spaceId), { method: 'POST' });
+  }));
+  await loadMemberData();
+  updateAccountButton();
+  renderCatalog();
+  renderFeatured();
+  renderFavorites();
+  closeModal(document.getElementById('authModal'));
+  toast(appState.auth.user.name + '님, 로그인했습니다.', 'success');
+
+  if (appState.pendingAction && appState.pendingAction.type === 'apply') {
+    const spaceId = appState.pendingAction.spaceId;
+    appState.pendingAction = null;
+    openApplication(spaceId);
+  }
+}
+
+async function loadMemberData() {
+  const responses = await Promise.all([
+    apiRequest('/api/v1/users/me/preferences'),
+    apiRequest('/api/v1/favorites'),
+    apiRequest('/api/v1/applications/me')
+  ]);
+  appState.auth.preferences = responses[0];
+  appState.favorites = new Set(responses[1].map(function (favorite) { return favorite.space.id; }));
+  appState.applications = responses[2];
+}
+
+function clearSession(refreshUi) {
+  sessionStorage.removeItem(STORAGE.token);
+  appState.auth.token = null;
+  appState.auth.user = null;
+  appState.auth.preferences = null;
+  appState.favorites = new Set(readStorage(STORAGE.favorites, []));
+  appState.applications = readStorage(STORAGE.applications, []);
+  if (refreshUi !== false) {
+    updateAccountButton();
+    renderCatalog();
+    renderFeatured();
+    renderFavorites();
+  }
+}
+
+function logout() {
+  closeModal(document.getElementById('accountModal'));
+  clearSession(true);
+  toast('로그아웃했습니다.');
+}
+
+function openAccount() {
+  if (!appState.auth.user) {
+    openAuth('login');
+    return;
+  }
+  fillAccountForms();
+  renderMyApplications();
+  openModal('accountModal');
+}
+
+function fillAccountForms() {
+  const user = appState.auth.user;
+  const preferences = appState.auth.preferences || {};
+  document.getElementById('accountName').textContent = user.name;
+  document.getElementById('accountEmail').textContent = user.email;
+  document.getElementById('profileName').value = user.name;
+  document.getElementById('profileEmail').value = user.email;
+  document.getElementById('profilePhone').value = user.phone || '';
+  document.getElementById('preferenceDistrict').value = preferences.preferred_district || '';
+  document.getElementById('preferenceCategory').value = preferences.preferred_category || '';
+  document.getElementById('preferenceBudget').value = preferences.max_monthly_rent ?? '';
+  document.getElementById('preferenceArea').value = preferences.min_area ?? '';
+  document.getElementById('preferenceParking').checked = Boolean(preferences.parking_required);
+  document.getElementById('preferenceSummary').value = preferences.project_summary || '';
+}
+
+async function submitProfile(event) {
+  event.preventDefault();
+  try {
+    appState.auth.user = await apiRequest('/api/v1/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: document.getElementById('profileName').value.trim(),
+        phone: document.getElementById('profilePhone').value.trim() || null
+      })
+    });
+    updateAccountButton();
+    fillAccountForms();
+    toast('내 정보를 저장했습니다.', 'success');
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+function preferencePayloadFromForm() {
+  const budget = document.getElementById('preferenceBudget').value;
+  const area = document.getElementById('preferenceArea').value;
+  return {
+    preferred_district: document.getElementById('preferenceDistrict').value || null,
+    preferred_category: document.getElementById('preferenceCategory').value || null,
+    max_monthly_rent: budget === '' ? null : Number(budget),
+    min_area: area === '' ? null : Number(area),
+    parking_required: document.getElementById('preferenceParking').checked,
+    project_summary: document.getElementById('preferenceSummary').value.trim() || null
+  };
+}
+
+async function submitPreferences(event) {
+  event.preventDefault();
+  try {
+    appState.auth.preferences = await apiRequest('/api/v1/users/me/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(preferencePayloadFromForm())
+    });
+    fillAccountForms();
+    toast('추천 조건을 저장했습니다.', 'success');
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+function renderMyApplications() {
+  const list = document.getElementById('myApplications');
+  if (!appState.applications.length) {
+    list.innerHTML = '<div class="application-empty">아직 접수한 신청이 없습니다.</div>';
+    return;
+  }
+  const statusNames = { PENDING: '검토 중', APPROVED: '승인', REJECTED: '반려', CANCELLED: '취소' };
+  list.innerHTML = appState.applications.map(function (application) {
+    return [
+      '<div class="application-item">',
+        '<div><strong>' + application.space.name + '</strong><span>' + application.visit_date + ' · ' + application.application_type + '</span></div>',
+        '<span class="application-status">' + (statusNames[application.status] || application.status) + '</span>',
+        application.status === 'PENDING' ? '<button type="button" data-action="cancel-application" data-application-id="' + application.id + '">신청 취소</button>' : '',
+      '</div>'
+    ].join('');
+  }).join('');
+}
+
+async function cancelApplication(applicationId) {
+  try {
+    const updated = await apiRequest('/api/v1/applications/' + applicationId + '/cancel', { method: 'PATCH' });
+    appState.applications = appState.applications.map(function (application) {
+      return application.id === updated.id ? updated : application;
+    });
+    renderMyApplications();
+    toast('신청을 취소했습니다.');
+  } catch (error) {
+    toast(error.message);
+  }
 }
 
 function openDetail(id) {
@@ -525,11 +853,11 @@ let kakaoSdkPromise = null;
 // Kakao JS 키는 서버 설정 엔드포인트에서 받아온다 — 정적 파일에 하드코딩하지 않는다.
 function loadKakaoSdk() {
   if (kakaoSdkPromise) return kakaoSdkPromise;
-  kakaoSdkPromise = fetchJSON('/api/v1/config').then(function (config) {
-    if (!config.kakaoJsKey) throw new Error('카카오 JS 키가 설정되지 않았습니다.');
+  kakaoSdkPromise = fetchJSON('/api/v1/config/public').then(function (config) {
+    if (!config.kakao_map_app_key) throw new Error('카카오 JS 키가 설정되지 않았습니다.');
     return new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=' + config.kakaoJsKey + '&autoload=false';
+      script.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + config.kakao_map_app_key + '&autoload=false';
       script.onload = function () {
         kakao.maps.load(resolve);
       };
@@ -575,47 +903,60 @@ function renderRoadview(space) {
 function openApplication(id) {
   const space = findSpace(id);
   if (!space) return;
+  if (!appState.auth.user) {
+    appState.pendingAction = { type: 'apply', spaceId: id };
+    closeModal(document.getElementById('detailModal'));
+    openAuth('login');
+    toast('방문 신청은 로그인 후 접수할 수 있습니다.');
+    return;
+  }
   closeModal(document.getElementById('detailModal'));
   document.getElementById('applySpaceId').value = id;
   document.getElementById('applySpaceName').textContent = space.name;
+  document.getElementById('applicantName').value = appState.auth.user.name;
+  document.getElementById('applicantPhone').value = appState.auth.user.phone || '';
   openModal('applyModal');
 }
 
 async function submitApplication(event) {
   event.preventDefault();
   const payload = {
-    spaceId: document.getElementById('applySpaceId').value,
-    name: document.getElementById('applicantName').value.trim(),
-    phone: document.getElementById('applicantPhone').value.trim(),
-    visitDate: document.getElementById('visitDate').value,
+    space_id: document.getElementById('applySpaceId').value,
+    visit_date: document.getElementById('visitDate').value,
+    application_type: 'VISIT',
+    applicant_name: document.getElementById('applicantName').value.trim(),
+    applicant_phone: document.getElementById('applicantPhone').value.trim(),
     message: document.getElementById('applyMessage').value.trim()
   };
 
-  let application = null;
   try {
-    const response = await fetch('/api/v1/applications', {
+    const application = await apiRequest('/api/v1/applications', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    if (response.ok) application = await response.json();
+    appState.applications.unshift(application);
+    event.target.reset();
+    setMinimumVisitDate();
+    closeModal(document.getElementById('applyModal'));
+    toast('방문·이용 신청을 접수했습니다.', 'success');
   } catch (error) {
-    console.warn('신청 접수를 서버에 저장하지 못해 이 기기에만 남깁니다.', error);
+    toast(error.message);
   }
-
-  appState.applications.unshift(application || Object.assign({
-    id: 'APP-' + Date.now(),
-    status: 'PENDING',
-    createdAt: new Date().toISOString()
-  }, payload));
-  saveState(STORAGE.applications);
-  event.target.reset();
-  setMinimumVisitDate();
-  closeModal(document.getElementById('applyModal'));
-  toast('방문·이용 신청을 접수했습니다.', 'success');
 }
 
-function submitRecommendation(event) {
+function openRecommend() {
+  const preferences = appState.auth.preferences;
+  if (preferences) {
+    document.getElementById('recommendDistrict').value = preferences.preferred_district || 'ALL';
+    document.getElementById('recommendPurpose').value = preferences.preferred_category || document.getElementById('recommendPurpose').value;
+    if (preferences.max_monthly_rent !== null) document.getElementById('recommendBudget').value = String(preferences.max_monthly_rent);
+    if (preferences.min_area !== null) document.getElementById('recommendArea').value = String(preferences.min_area);
+    document.getElementById('recommendParking').checked = Boolean(preferences.parking_required);
+  }
+  openModal('recommendModal');
+}
+
+async function submitRecommendation(event) {
   event.preventDefault();
   const criteria = {
     district: document.getElementById('recommendDistrict').value,
@@ -668,6 +1009,24 @@ function submitRecommendation(event) {
     ].join('');
   }).join('');
   resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  if (appState.auth.user) {
+    try {
+      appState.auth.preferences = await apiRequest('/api/v1/users/me/preferences', {
+        method: 'PUT',
+        body: JSON.stringify({
+          preferred_district: criteria.district === 'ALL' ? null : criteria.district,
+          preferred_category: criteria.purpose,
+          max_monthly_rent: criteria.budget,
+          min_area: criteria.area,
+          parking_required: criteria.parking,
+          project_summary: appState.auth.preferences ? appState.auth.preferences.project_summary : null
+        })
+      });
+    } catch (error) {
+      console.warn('추천 조건을 계정에 저장하지 못했습니다.', error);
+    }
+  }
 }
 
 function initMap() {

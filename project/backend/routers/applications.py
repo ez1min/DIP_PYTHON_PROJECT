@@ -8,8 +8,9 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from backend.catalog import ensure_catalog_space
 from backend.dependencies import CurrentUser, DbSession
-from backend.models import Application, ApplicationStatus, Space, SpaceStatus
+from backend.models import Application, ApplicationStatus, SpaceStatus
 from backend.schemas import ApplicationCreate, ApplicationResponse
 
 
@@ -31,7 +32,7 @@ def list_my_applications(current_user: CurrentUser, db: DbSession) -> list[Appli
 def create_application(
     payload: ApplicationCreate, current_user: CurrentUser, db: DbSession
 ) -> Application:
-    space = db.get(Space, payload.space_id)
+    space = ensure_catalog_space(db, payload.space_id)
     if space is None:
         raise HTTPException(status_code=404, detail="해당 공간을 찾을 수 없습니다.")
     if space.status != SpaceStatus.AVAILABLE:

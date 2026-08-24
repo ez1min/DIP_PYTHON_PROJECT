@@ -6,8 +6,9 @@ from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from backend.catalog import ensure_catalog_space
 from backend.dependencies import CurrentUser, DbSession
-from backend.models import Favorite, Space
+from backend.models import Favorite
 from backend.schemas import FavoriteResponse
 
 
@@ -27,7 +28,7 @@ def list_favorites(current_user: CurrentUser, db: DbSession) -> list[Favorite]:
 
 @router.post("/{space_id}", response_model=FavoriteResponse, status_code=status.HTTP_201_CREATED)
 def add_favorite(space_id: str, current_user: CurrentUser, db: DbSession) -> Favorite:
-    space = db.get(Space, space_id)
+    space = ensure_catalog_space(db, space_id)
     if space is None:
         raise HTTPException(status_code=404, detail="해당 공간을 찾을 수 없습니다.")
     favorite = db.get(Favorite, (current_user.id, space_id))

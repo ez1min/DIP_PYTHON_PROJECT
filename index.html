@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>다시, 공간 | 대구광역시 유휴시설 추천 및 매칭 플랫폼</title>
+  <meta name="description" content="대구광역시의 방치된 유휴시설과 빈집을 발굴하여 청년 창업가, 예술인, 스타트업에 맞춤형으로 추천하고 매칭하는 스마트 도시재생 플랫폼입니다.">
+  
+  <!-- Favicon / Icons -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230D9488'><path d='M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z'/></svg>">
+  
+  <!-- Web Fonts -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- =========================================================================
+       Site Header
+       ========================================================================= -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="#" class="brand-logo" onclick="switchNavTab('explore'); return false;">
+        <div class="logo-badge">
+          <i class="fa-solid fa-cube"></i>
+        </div>
+        <div>
+          <span>다시, 공간</span>
+          <span class="logo-sub">대구 유휴플랫폼</span>
+        </div>
+      </a>
+
+      <!-- Navigation Tabs -->
+      <nav class="nav-tabs">
+        <button class="nav-tab-btn active" id="tab-explore" onclick="switchNavTab('explore')">
+          <i class="fa-solid fa-compass"></i> 공간 탐색
+        </button>
+        <button class="nav-tab-btn" id="tab-map" onclick="switchNavTab('map')">
+          <i class="fa-solid fa-map-location-dot"></i> 대구 지도
+        </button>
+        <button class="nav-tab-btn" id="tab-recommend" onclick="openRecommendWizard()">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> AI 맞춤 추천
+        </button>
+        <button class="nav-tab-btn" id="tab-favorites" onclick="switchNavTab('favorites')">
+          <i class="fa-solid fa-heart"></i> 관심 공간 <span class="badge" id="fav-count-badge">0</span>
+        </button>
+        <button class="nav-tab-btn" id="tab-admin" onclick="switchNavTab('admin')">
+          <i class="fa-solid fa-sliders"></i> 관리자 포털
+        </button>
+      </nav>
+
+      <!-- Role Switcher & Actions -->
+      <div class="nav-actions">
+        <div class="role-switcher" title="시뮬레이션 모드 전환">
+          <button class="role-pill active" id="role-general" onclick="setUserRole('GENERAL')">청년/일반</button>
+          <button class="role-pill" id="role-provider" onclick="setUserRole('PROVIDER')">제공자</button>
+          <button class="role-pill" id="role-admin" onclick="setUserRole('ADMIN')">대구시/관리자</button>
+        </div>
+        
+        <button class="btn-primary" onclick="openSpaceRegisterModal()" id="btn-quick-register" style="display:none;">
+          <i class="fa-solid fa-plus"></i> 유휴시설 등록
+        </button>
+
+        <button class="btn-outline" onclick="toggleTheme()" title="화면 테마 전환" id="theme-toggle-btn">
+          <i class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =========================================================================
+       Hero & Key Metrics Section
+       ========================================================================= -->
+  <section class="hero-banner" id="hero-section">
+    <div class="hero-tag">
+      <i class="fa-solid fa-city"></i> Daegu Urban Regeneration & Matching
+    </div>
+    <h1 class="hero-title">
+      대구의 멈춰있던 유휴공간이<br>
+      <span class="gradient-text">청년의 새로운 가능성</span>으로 다시 태어납니다
+    </h1>
+    <p class="hero-subtitle">
+      대구광역시 전역의 방치된 빈집과 공공 유휴시설 정보를 실시간 통합·분석하여<br>
+      창업가, 예술가, 소상공인에게 가장 적합한 최적의 공간을 스마트하게 매칭합니다.
+    </p>
+
+    <!-- Key Metrics Cards -->
+    <div class="metrics-bar">
+      <div class="metric-card">
+        <div class="metric-val green" id="metric-total-spaces">12</div>
+        <div class="metric-label">대구 전역 발굴 공간</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val blue" id="metric-avail-spaces">10</div>
+        <div class="metric-label">즉시 이용 가능 시설</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val purple" id="metric-support-rate">68%</div>
+        <div class="metric-label">리모델링/임대료 지원율</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val amber" id="metric-match-count">24</div>
+        <div class="metric-label">매칭 및 방문 신청 건</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================================
+       Main Application Container
+       ========================================================================= -->
+  <main class="app-container">
+
+    <!-- VIEW 1: Explorer & Grid View -->
+    <section id="view-explore" class="tab-view-section">
+      <div class="explorer-layout">
+        
+        <!-- Sidebar Filter Panel -->
+        <aside class="filter-sidebar">
+          <div class="filter-header">
+            <h3 class="filter-title">
+              <i class="fa-solid fa-filter"></i> 상세 필터
+            </h3>
+            <button class="btn-reset" onclick="resetFilters()">
+              <i class="fa-solid fa-rotate-left"></i> 초기화
+            </button>
+          </div>
+
+          <!-- Keyword Search -->
+          <div class="filter-group">
+            <div class="search-input-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" id="filter-keyword" placeholder="공간명, 키워드, 시설 검색" oninput="applyFilters()">
+            </div>
+          </div>
+
+          <!-- District Selection Chips -->
+          <div class="filter-group">
+            <label class="filter-label">
+              <span>대구 구·군 선택</span>
+              <span id="selected-district-count" style="color:var(--primary);">전체</span>
+            </label>
+            <div class="chips-grid" id="district-chips">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Purpose Category -->
+          <div class="filter-group">
+            <label class="filter-label">활용 목적 / 용도</label>
+            <div class="category-grid" id="category-selector">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Monthly Rent Range Slider -->
+          <div class="filter-group">
+            <label class="filter-label">
+              <span>최대 월 임대료</span>
+              <strong id="display-max-rent" style="color:var(--primary);">전체 (제한없음)</strong>
+            </label>
+            <div class="range-slider-wrapper">
+              <input type="range" id="filter-max-rent" min="10" max="100" step="5" value="100" oninput="updateRentDisplay(this.value)">
+              <div class="range-value-display">
+                <span>10만원</span>
+                <span>50만원</span>
+                <span>100만원+</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Area Range Slider -->
+          <div class="filter-group">
+            <label class="filter-label">
+              <span>최소 희망 면적</span>
+              <strong id="display-min-area" style="color:var(--primary);">전체 (0㎡ 이상)</strong>
+            </label>
+            <div class="range-slider-wrapper">
+              <input type="range" id="filter-min-area" min="0" max="200" step="10" value="0" oninput="updateAreaDisplay(this.value)">
+              <div class="range-value-display">
+                <span>0㎡</span>
+                <span>100㎡ (약30평)</span>
+                <span>200㎡+</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Special Toggles -->
+          <div class="filter-group">
+            <label class="filter-label">특별 조건</label>
+            <div class="toggle-option">
+              <span><i class="fa-solid fa-square-parking" style="margin-right:6px;"></i> 전용 주차 가능</span>
+              <label class="switch">
+                <input type="checkbox" id="filter-parking" onchange="applyFilters()">
+                <span class="slider-round"></span>
+              </label>
+            </div>
+            <div class="toggle-option">
+              <span><i class="fa-solid fa-hand-holding-dollar" style="margin-right:6px;"></i> 리모델링 지원 대상</span>
+              <label class="switch">
+                <input type="checkbox" id="filter-remodeling" onchange="applyFilters()">
+                <span class="slider-round"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- AI Recommend Callout -->
+          <div class="sidebar-ai-box">
+            <h4><i class="fa-solid fa-wand-magic-sparkles"></i> AI 맞춤 추천 마법사</h4>
+            <p>목적, 예산, 팀 규모를 입력하시면 최적 적합도 점수(Match Score)로 추천해 드립니다.</p>
+            <button onclick="openRecommendWizard()">
+              <i class="fa-solid fa-bolt"></i> 1분 맞춤 진단 시작
+            </button>
+          </div>
+        </aside>
+
+        <!-- Main Cards List -->
+        <div class="explorer-main">
+          <div class="explorer-toolbar">
+            <div class="result-count-wrap">
+              검색된 유휴공간 <strong id="search-count">0</strong>개
+            </div>
+            <div class="toolbar-actions">
+              <select class="sort-select" id="sort-order" onchange="applyFilters()">
+                <option value="recommended">추천순</option>
+                <option value="views">인기 조회순</option>
+                <option value="price-asc">낮은 임대료순</option>
+                <option value="price-desc">높은 임대료순</option>
+                <option value="area-desc">넓은 면적순</option>
+                <option value="latest">최신 등록순</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Spaces Card Grid -->
+          <div class="spaces-grid" id="spaces-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: Interactive Daegu Map View -->
+    <section id="view-map" class="tab-view-section" style="display:none;">
+      <div class="map-view-container">
+        <div class="map-embed-wrapper">
+          <div id="daegu-map"></div>
+        </div>
+        <div class="map-side-list" id="map-side-list">
+          <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem;">
+            <i class="fa-solid fa-location-dot" style="color:var(--primary); margin-right:6px;"></i>
+            대구 지도 유휴공간 목록
+          </h3>
+          <div id="map-side-items">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Favorites (관심 공간) View -->
+    <section id="view-favorites" class="tab-view-section" style="display:none;">
+      <div style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h2 style="font-size:1.6rem; font-weight:800;">
+            <i class="fa-solid fa-heart" style="color:#EF4444; margin-right:8px;"></i>
+            내가 찜한 관심 공간
+          </h2>
+          <p style="color:var(--text-muted); font-size:0.9rem;">
+            마음에 드는 공간을 비교하고 한 번에 문의 및 현장 투어를 신청하세요.
+          </p>
+        </div>
+        <button class="btn-primary" onclick="openCompareModal()" id="btn-compare-all">
+          <i class="fa-solid fa-code-compare"></i> 선택 공간 다중 비교하기
+        </button>
+      </div>
+
+      <div class="spaces-grid" id="favorites-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- VIEW 4: Admin & Provider Portal View -->
+    <section id="view-admin" class="tab-view-section" style="display:none;">
+      <div class="admin-portal-wrap">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h2 style="font-size:1.65rem; font-weight:800;">
+              <i class="fa-solid fa-shield-halved" style="color:var(--primary); margin-right:8px;"></i>
+              대구광역시 유휴시설 통합 관리자 포털
+            </h2>
+            <p style="color:var(--text-muted); font-size:0.9rem;">
+              유휴시설 등록/상태 변경, 시민 이용 신청 및 현장 방문 심사, 공공데이터 동기화 파이프라인을 운영합니다.
+            </p>
+          </div>
+          <button class="btn-primary" onclick="openSpaceRegisterModal()">
+            <i class="fa-solid fa-plus"></i> 신규 유휴공간 등록
+          </button>
+        </div>
+
+        <!-- Admin Sub Tabs -->
+        <div class="admin-header-tabs">
+          <button class="admin-tab-btn active" onclick="switchAdminTab('spaces')">
+            <i class="fa-solid fa-building"></i> 등록 공간 관리 (<span id="admin-space-count">0</span>)
+          </button>
+          <button class="admin-tab-btn" onclick="switchAdminTab('applications')">
+            <i class="fa-solid fa-file-signature"></i> 이용 신청 심사 (<span id="admin-app-count">0</span>)
+          </button>
+          <button class="admin-tab-btn" onclick="switchAdminTab('visits')">
+            <i class="fa-solid fa-calendar-check"></i> 현장 방문 관리 (<span id="admin-visit-count">0</span>)
+          </button>
+          <button class="admin-tab-btn" onclick="switchAdminTab('data')">
+            <i class="fa-solid fa-database"></i> 공공데이터 ETL 파이프라인
+          </button>
+        </div>
+
+        <!-- Admin Content 1: Space Management -->
+        <div id="admin-tab-spaces" class="admin-tab-content active">
+          <div class="admin-table-card">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>공간 ID</th>
+                  <th>공간명 / 주소</th>
+                  <th>용도 구분</th>
+                  <th>면적 / 임대료</th>
+                  <th>상태</th>
+                  <th>리모델링 지원</th>
+                  <th>관리 액션</th>
+                </tr>
+              </thead>
+              <tbody id="admin-spaces-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Admin Content 2: Applications Review -->
+        <div id="admin-tab-applications" class="admin-tab-content">
+          <div class="admin-table-card">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>신청번호</th>
+                  <th>신청자 / 연락처</th>
+                  <th>대상 공간</th>
+                  <th>이용 목적 및 사업 계획</th>
+                  <th>신청일</th>
+                  <th>진행 상태</th>
+                  <th>심사 처리</th>
+                </tr>
+              </thead>
+              <tbody id="admin-apps-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Admin Content 3: Visits Management -->
+        <div id="admin-tab-visits" class="admin-tab-content">
+          <div class="admin-table-card">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>예약번호</th>
+                  <th>신청자</th>
+                  <th>방문 희망 공간</th>
+                  <th>희망 일시</th>
+                  <th>문의 메시지</th>
+                  <th>상태</th>
+                  <th>일정 승인</th>
+                </tr>
+              </thead>
+              <tbody id="admin-visits-tbody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Admin Content 4: Public Data ETL Pipeline -->
+        <div id="admin-tab-data" class="admin-tab-content">
+          <div class="etl-pipeline-box">
+            <div class="etl-status-bar">
+              <div>
+                <h4 style="font-size:1.15rem; font-weight:700;">대구광역시 공공데이터 & 웹 크롤링 수집 엔진</h4>
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-top:2px;">
+                  대구시 공공데이터 포털 API 및 구·군청 빈집 공시 정보를 주기적으로 수집·정제·적재합니다.
+                </p>
+              </div>
+              <button class="btn-primary" onclick="runDataSyncPipeline()" id="btn-run-etl">
+                <i class="fa-solid fa-arrows-rotate"></i> 지금 데이터 수집 & 정제 실행
+              </button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; margin-bottom:1.5rem;">
+              <div style="background:var(--bg-glass); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+                <div style="font-size:0.8rem; color:var(--text-dim);">대구 공공 API 연결 상태</div>
+                <div style="font-size:1.2rem; font-weight:800; color:#10B981; margin-top:4px;">정상 (ONLINE)</div>
+              </div>
+              <div style="background:var(--bg-glass); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+                <div style="font-size:0.8rem; color:var(--text-dim);">마지막 동기화 일시</div>
+                <div style="font-size:1.1rem; font-weight:700; color:var(--text-main); margin-top:4px;" id="last-sync-time">2026-08-14 14:00</div>
+              </div>
+              <div style="background:var(--bg-glass); padding:1rem; border-radius:var(--radius-sm); border:1px solid var(--border-glass);">
+                <div style="font-size:0.8rem; color:var(--text-dim);">누적 수집 및 정제 건수</div>
+                <div style="font-size:1.2rem; font-weight:800; color:#818CF8; margin-top:4px;" id="total-synced-count">120 건</div>
+              </div>
+            </div>
+
+            <h5 style="font-size:0.9rem; font-weight:700; margin-bottom:0.5rem; color:var(--text-muted);">
+              <i class="fa-solid fa-terminal"></i> 실시간 수집 파이프라인 실행 로그
+            </h5>
+            <div class="etl-logs-terminal" id="etl-terminal-log">
+              [SYSTEM] 대구광역시 공공데이터 API 클라이언트 대기 중...<br>
+              [DATA-01] 대구 공유재산 유휴시설 DB 엔드포인트 응답 200 OK<br>
+              [DATA-03] 데이터 중복 제거 및 결측치 보정 완료 (유효 데이터 12건 정상 적재)
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========================================================================
+       Floating Multi-Space Compare Drawer
+       ========================================================================= -->
+  <div class="floating-compare-bar" id="floating-compare-bar">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <i class="fa-solid fa-scale-balanced" style="color:#818CF8; font-size:1.2rem;"></i>
+      <span>비교함에 담긴 공간 <strong id="compare-count" style="color:#818CF8;">0</strong>개 (최대 4개)</span>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;" onclick="openCompareModal()">
+        스펙 비교하기
+      </button>
+      <button class="btn-outline" style="padding:0.45rem 0.75rem; font-size:0.85rem;" onclick="clearCompareList()">
+        비우기
+      </button>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 1: Space Detail Modal (SPACE-02, FR-040~045)
+       ========================================================================= -->
+  <div class="modal-overlay" id="modal-space-detail">
+    <div class="modal-window">
+      <button class="modal-close-btn" onclick="closeModal('modal-space-detail')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div class="detail-modal-body" id="detail-modal-content">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 2: AI Recommend Wizard Modal (REC-01, FR-030~034)
+       ========================================================================= -->
+  <div class="modal-overlay" id="modal-recommend-wizard">
+    <div class="modal-window wizard-modal">
+      <button class="modal-close-btn" onclick="closeModal('modal-recommend-wizard')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="wizard-step-header">
+        <div class="wizard-progress">
+          <div class="progress-bar-seg active" id="wz-prog-1"></div>
+          <div class="progress-bar-seg" id="wz-prog-2"></div>
+          <div class="progress-bar-seg" id="wz-prog-3"></div>
+          <div class="progress-bar-seg" id="wz-prog-4"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
+          <span>AI 맞춤 공간 추천 마법사</span>
+          <span id="wz-step-indicator">Step 1 / 4</span>
+        </div>
+      </div>
+
+      <div class="wizard-body">
+        <!-- Step 1: Purpose -->
+        <div class="wizard-step active" id="wz-step-1">
+          <h3>어떤 목적으로 공간이 필요하신가요?</h3>
+          <p>이용 목적에 맞춰 설비와 인프라가 최적화된 유휴공간을 매칭합니다.</p>
+          <div class="wizard-options-grid">
+            <div class="wizard-opt-card" onclick="selectWizardOpt('purpose', 'STARTUP', this)">
+              <i class="fa-solid fa-rocket"></i>
+              <h4>청년 창업 & IT 스타트업</h4>
+              <p>회의실, 고속 인터넷, 업무 시설 구비</p>
+            </div>
+            <div class="wizard-opt-card" onclick="selectWizardOpt('purpose', 'ART', this)">
+              <i class="fa-solid fa-palette"></i>
+              <h4>문화·예술 전시 & 공연</h4>
+              <p>높은 층고, 조명, 창작 스튜디오</p>
+            </div>
+            <div class="wizard-opt-card" onclick="selectWizardOpt('purpose', 'SHOP', this)">
+              <i class="fa-solid fa-store"></i>
+              <h4>소상공인 & 팝업 스토어</h4>
+              <p>유동인구 풍부, 통유리 쇼룸</p>
+            </div>
+            <div class="wizard-opt-card" onclick="selectWizardOpt('purpose', 'WORKSHOP', this)">
+              <i class="fa-solid fa-hammer"></i>
+              <h4>공예·목공·영상 작업실</h4>
+              <p>방음 설비, 3상 고전력, 소음 자유</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: District -->
+        <div class="wizard-step" id="wz-step-2">
+          <h3>선호하시는 대구 지역을 선택해주세요</h3>
+          <p>원하시는 구·군을 1개 이상 선택하실 수 있습니다.</p>
+          <div class="chips-grid" style="grid-template-columns: repeat(3, 1fr); gap:10px;" id="wz-district-chips">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Step 3: Budget & Area -->
+        <div class="wizard-step" id="wz-step-3">
+          <h3>희망하시는 예산과 면적 범위를 알려주세요</h3>
+          <p>지원금 및 보조금을 고려한 가성비 최적 공간을 산출합니다.</p>
+          
+          <div style="margin-bottom:1.5rem;">
+            <label class="filter-label">
+              <span>월 최대 부담 가능 임대료</span>
+              <strong id="wz-rent-val" style="color:#818CF8;">40 만원</strong>
+            </label>
+            <input type="range" min="10" max="80" step="5" value="40" style="width:100%; accent-color:#6366F1;" oninput="document.getElementById('wz-rent-val').textContent = this.value + ' 만원'; wzCriteria.maxRent = parseInt(this.value);">
+          </div>
+
+          <div>
+            <label class="filter-label">
+              <span>필요 최소 면적</span>
+              <strong id="wz-area-val" style="color:#818CF8;">60 ㎡ (약 18평)</strong>
+            </label>
+            <input type="range" min="20" max="180" step="10" value="60" style="width:100%; accent-color:#6366F1;" oninput="document.getElementById('wz-area-val').textContent = this.value + ' ㎡ (약 ' + Math.round(this.value/3.3) + '평)'; wzCriteria.minArea = parseInt(this.value);">
+          </div>
+        </div>
+
+        <!-- Step 4: Facility & Support -->
+        <div class="wizard-step" id="wz-step-4">
+          <h3>꼭 필요한 필수 요건을 선택해주세요</h3>
+          <p>정밀 매칭 점수(Match Score) 계산에 최종 반영됩니다.</p>
+          <div class="wizard-options-grid">
+            <div class="wizard-opt-card" onclick="toggleWizardTag('parking', this)">
+              <i class="fa-solid fa-square-parking"></i>
+              <h4>전용 주차 공간 필요</h4>
+              <p>차량 방문객 및 화물 하역 필수</p>
+            </div>
+            <div class="wizard-opt-card" onclick="toggleWizardTag('remodeling', this)">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+              <h4>리모델링 지원금 우선</h4>
+              <p>대구시 개보수 보조금 대상 공간</p>
+            </div>
+            <div class="wizard-opt-card" onclick="toggleWizardTag('subway', this)">
+              <i class="fa-solid fa-train-subway"></i>
+              <h4>지하철역 도보 역세권</h4>
+              <p>대중교통 접근성 최우선</p>
+            </div>
+            <div class="wizard-opt-card" onclick="toggleWizardTag('ready', this)">
+              <i class="fa-solid fa-bolt"></i>
+              <h4>즉시 입주 가능</h4>
+              <p>리모델링 완료된 완비형 공간</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wizard-footer">
+        <button class="btn-outline" id="wz-btn-prev" onclick="prevWizardStep()" style="display:none;">
+          <i class="fa-solid fa-chevron-left"></i> 이전 단계
+        </button>
+        <div style="margin-left:auto; display:flex; gap:8px;">
+          <button class="btn-primary" id="wz-btn-next" onclick="nextWizardStep()">
+            다음 단계 <i class="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 3: Space Compare Matrix Modal (FR-053)
+       ========================================================================= -->
+  <div class="modal-overlay" id="modal-compare-matrix">
+    <div class="modal-window compare-modal">
+      <button class="modal-close-btn" onclick="closeModal('modal-compare-matrix')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div style="padding:1.5rem 2rem 0;">
+        <h2 style="font-size:1.4rem; font-weight:800;">
+          <i class="fa-solid fa-scale-balanced" style="color:var(--primary); margin-right:8px;"></i>
+          관심 유휴공간 조건별 다중 비교 매트릭스
+        </h2>
+      </div>
+      <div class="compare-table-wrap" id="compare-table-container">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 4: Visit Reservation Modal (VISIT-01, FR-062)
+       ========================================================================= -->
+  <div class="modal-overlay" id="modal-visit-booking">
+    <div class="modal-window" style="max-width:550px;">
+      <button class="modal-close-btn" onclick="closeModal('modal-visit-booking')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div style="padding:2rem;">
+        <h3 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">
+          <i class="fa-solid fa-calendar-days" style="color:var(--primary); margin-right:6px;"></i>
+          현장 투어 및 실사 방문 신청
+        </h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;" id="visit-space-name-label">
+          대상 공간: 삼덕 청년 예술창작 유휴창고
+        </p>
+
+        <form id="form-visit-booking" onsubmit="submitVisitBooking(event)">
+          <input type="hidden" id="visit-space-id">
+          
+          <div style="margin-bottom:1rem;">
+            <label class="filter-label">신청자 성함 / 기업·팀명</label>
+            <input type="text" id="visit-user-name" required placeholder="홍길동 / 스튜디오 다시" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <label class="filter-label">연락처</label>
+            <input type="tel" id="visit-user-phone" required placeholder="010-1234-5678" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1rem;">
+            <div>
+              <label class="filter-label">방문 희망 일자</label>
+              <input type="date" id="visit-date" required style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm); color-scheme: dark;">
+            </div>
+            <div>
+              <label class="filter-label">방문 희망 시간</label>
+              <select id="visit-time" required style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+                <option value="10:00">오전 10:00</option>
+                <option value="11:30">오전 11:30</option>
+                <option value="14:00" selected>오후 02:00</option>
+                <option value="15:30">오후 03:30</option>
+                <option value="17:00">오후 05:00</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <label class="filter-label">방문 목적 및 사전 문의사항</label>
+            <textarea id="visit-message" rows="3" placeholder="시설 실측 및 전력 용량 확인을 희망합니다." style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+            <i class="fa-solid fa-paper-plane"></i> 현장 투어 예약 제출
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 5: Space Match Application Modal (MATCH-01, FR-070)
+       ========================================================================= -->
+  <div class="modal-overlay" id="modal-space-application">
+    <div class="modal-window" style="max-width:600px;">
+      <button class="modal-close-btn" onclick="closeModal('modal-space-application')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div style="padding:2rem;">
+        <h3 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">
+          <i class="fa-solid fa-file-signature" style="color:var(--primary); margin-right:6px;"></i>
+          유휴공간 입주 및 이용 매칭 신청서
+        </h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;" id="apply-space-name-label">
+          신청 대상: 복현 혁신 청년 스타트업 코워킹 베이스
+        </p>
+
+        <form id="form-space-application" onsubmit="submitSpaceApplication(event)">
+          <input type="hidden" id="apply-space-id">
+          
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1rem;">
+            <div>
+              <label class="filter-label">신청자 / 대표자명</label>
+              <input type="text" id="apply-user-name" required placeholder="이지민" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+            </div>
+            <div>
+              <label class="filter-label">연락처</label>
+              <input type="tel" id="apply-user-phone" required placeholder="010-9876-5432" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+            </div>
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <label class="filter-label">사용 목적 구분</label>
+            <select id="apply-purpose" required style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+              <option value="STARTUP">청년 창업 및 기술 스타트업</option>
+              <option value="ART">문화예술 전시 및 복합 창작</option>
+              <option value="SHOP">소상공인 팝업 및 로컬 매장</option>
+              <option value="WORKSHOP">공예/영상/음악 전문 작업실</option>
+              <option value="SOCIAL">사회적기업 및 마을공동체</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <label class="filter-label">사업 계획 및 활동 내용 요약</label>
+            <textarea id="apply-plan" rows="3" required placeholder="대구 청년을 위한 AI 소프트웨어 개발 및 기술 교육 오피스로 활용 계획" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);"></textarea>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:1.5rem;">
+            <div>
+              <label class="filter-label">희망 입주 기간</label>
+              <select id="apply-period" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+                <option value="6개월">6개월</option>
+                <option value="1년" selected>1년 (연장 가능)</option>
+                <option value="2년">2년 (장기 입주)</option>
+              </select>
+            </div>
+            <div>
+              <label class="filter-label">상주 인원 규모</label>
+              <select id="apply-team-size" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+                <option value="1~2인">1~2인 (초기/개인)</option>
+                <option value="3~5인" selected>3~5인 (팀/스타트업)</option>
+                <option value="6인 이상">6인 이상 (법인)</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+            <i class="fa-solid fa-check"></i> 공간 이용 신청서 정식 제출
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       MODAL 6: Space Registration Modal (ADMIN-SPACE-01, FR-010)
+       ========================================================================= -->
+  <div class="modal-overlay" id="modal-space-register">
+    <div class="modal-window" style="max-width:700px;">
+      <button class="modal-close-btn" onclick="closeModal('modal-space-register')">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div style="padding:2rem;">
+        <h3 style="font-size:1.35rem; font-weight:800; margin-bottom:0.35rem;">
+          <i class="fa-solid fa-plus-circle" style="color:var(--primary); margin-right:6px;"></i>
+          신규 대구 유휴시설 정보 등록
+        </h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1.5rem;">
+          대구시 또는 공공기관, 민간 소유의 유휴공간 정보를 등록하여 매칭 플랫폼에 공개합니다.
+        </p>
+
+        <form id="form-space-register" onsubmit="submitSpaceRegister(event)">
+          <div style="margin-bottom:1rem;">
+            <label class="filter-label">공간 명칭</label>
+            <input type="text" id="reg-name" required placeholder="예: 삼덕동 청년 예술공방" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 2fr; gap:10px; margin-bottom:1rem;">
+            <div>
+              <label class="filter-label">구·군</label>
+              <select id="reg-district" required style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+                <option value="중구">중구</option>
+                <option value="동구">동구</option>
+                <option value="서구">서구</option>
+                <option value="남구">남구</option>
+                <option value="북구">북구</option>
+                <option value="수성구">수성구</option>
+                <option value="달서구">달서구</option>
+                <option value="달성군">달성군</option>
+                <option value="군위군">군위군</option>
+              </select>
+            </div>
+            <div>
+              <label class="filter-label">상세 도로명 주소</label>
+              <input type="text" id="reg-address" required placeholder="대구광역시 중구 동덕로..." style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:1rem;">
+            <div>
+              <label class="filter-label">용도 구분</label>
+              <select id="reg-category" required style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+                <option value="STARTUP">청년 창업</option>
+                <option value="SHOP">소규모 상점</option>
+                <option value="OFFICE">사무실</option>
+                <option value="ART">문화·예술</option>
+                <option value="WORKSHOP">작업실</option>
+                <option value="SOCIAL">사회적기업</option>
+              </select>
+            </div>
+            <div>
+              <label class="filter-label">전용 면적 (㎡)</label>
+              <input type="number" id="reg-area" required placeholder="85.5" step="0.1" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+            </div>
+            <div>
+              <label class="filter-label">월 임대료 (만원)</label>
+              <input type="number" id="reg-rent" required placeholder="30" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+            </div>
+          </div>
+
+          <div style="margin-bottom:1rem;">
+            <label class="filter-label">리모델링 지원 정책</label>
+            <input type="text" id="reg-support" placeholder="대구시 도시재생 리모델링 보조금 지원 대상" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);">
+          </div>
+
+          <div style="margin-bottom:1.5rem;">
+            <label class="filter-label">공간 상세 설명</label>
+            <textarea id="reg-desc" rows="3" placeholder="공간의 특장점, 인근 교통, 적합 입주자 설명" style="width:100%; background:var(--bg-glass); border:1px solid var(--border-glass); padding:0.65rem; border-radius:var(--radius-sm);"></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width:100%; justify-content:center;">
+            <i class="fa-solid fa-plus"></i> 유휴공간 신규 등록 완료
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

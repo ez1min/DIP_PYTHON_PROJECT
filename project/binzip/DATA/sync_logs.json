@@ -1,0 +1,44 @@
+[
+  {
+    "timestamp": "2026-08-24T02:02:00",
+    "source": "건축물대장 HUB API + 전기 사용량 원자료",
+    "status": "SUCCESS",
+    "count": 135,
+    "note": "135건의 유휴공간 후보를 수집했습니다."
+  },
+  {
+    "timestamp": "2026-08-24T01:59:31",
+    "source": "건축물대장 HUB API + 전기 사용량 원자료",
+    "status": "SUCCESS",
+    "count": 135,
+    "note": "135건의 유휴공간 후보를 수집했습니다."
+  },
+  {
+    "timestamp": "2026-08-24T01:55:38",
+    "source": "건축물대장 HUB API + 전기 사용량 원자료",
+    "status": "SUCCESS",
+    "count": 132,
+    "note": "132건의 유휴공간 후보를 수집했습니다."
+  },
+  {
+    "timestamp": "2026-08-24T00:23:36",
+    "source": "건축물대장 HUB API + 전기 사용량 원자료",
+    "status": "SUCCESS",
+    "count": 42,
+    "note": "42건의 유휴공간 후보를 수집했습니다."
+  },
+  {
+    "timestamp": "2026-08-23T18:34:03",
+    "source": "건축물대장 HUB API + 전기 사용량 원자료",
+    "status": "SUCCESS",
+    "count": 42,
+    "note": "42건의 유휴공간 후보를 수집했습니다."
+  },
+  {
+    "timestamp": "2026-08-23T17:53:51",
+    "source": "건축물대장 HUB API + 전기 사용량 원자료",
+    "status": "SUCCESS",
+    "count": 1,
+    "note": "1건의 유휴공간 후보를 수집했습니다."
+  }
+]

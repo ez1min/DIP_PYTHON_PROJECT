@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="대구의 비어 있는 공간과 새로운 시작을 연결하는 유휴시설 추천·매칭 플랫폼">
+  <title>다시, 공간 — 비어 있던 곳에 다음 장면을</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="다시 공간 홈">
+      <span class="brand-mark" aria-hidden="true">
+        <span></span><span></span><span></span>
+      </span>
+      <span class="brand-name">다시, 공간</span>
+    </a>
+
+    <nav class="desktop-nav" aria-label="주요 메뉴">
+      <a href="#discover">공간 찾기</a>
+      <button type="button" data-action="show-map">지도 보기</button>
+      <a href="#guide">이용 안내</a>
+      <button type="button" data-action="open-admin">운영센터</button>
+    </nav>
+
+    <div class="header-actions">
+      <button class="saved-button" type="button" data-action="open-favorites">
+        저장한 공간 <span id="favoriteCount">0</span>
+      </button>
+      <button class="header-cta" type="button" data-action="open-recommend">내 공간 추천받기</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">
+          <span class="eyebrow-dot"></span>
+          대구 유휴공간 큐레이션
+        </div>
+        <h1>
+          비어 있던 곳에<br>
+          <span>다음 장면</span>을.
+        </h1>
+        <p class="hero-description">
+          방치된 공간은 누군가에게 시작점이 됩니다.<br>
+          예산과 목적을 알려주면 대구 곳곳의 가능성을 찾아드려요.
+        </p>
+        <div class="hero-actions">
+          <a class="button button-dark" href="#discover">공간 둘러보기 <span>↗</span></a>
+          <button class="text-button" type="button" data-action="open-recommend">
+            1분 맞춤 추천 <span>→</span>
+          </button>
+        </div>
+        <dl class="hero-numbers">
+          <div><dt id="heroSpaceCount">12</dt><dd>발굴 공간</dd></div>
+          <div><dt>9</dt><dd>대구 구·군</dd></div>
+          <div><dt>68%</dt><dd>지원 가능 공간</dd></div>
+        </dl>
+      </div>
+
+      <div class="hero-visual" aria-label="오늘 주목할 공간">
+        <span class="shape shape-blue"></span>
+        <span class="shape shape-orange"></span>
+        <article class="featured-card">
+          <div class="featured-image-wrap">
+            <img id="featuredImage" alt="추천 유휴공간">
+            <span class="featured-index">이번 주<br>공간 01</span>
+            <button class="round-favorite" type="button" data-featured-favorite aria-label="관심 공간 저장">♡</button>
+          </div>
+          <div class="featured-body">
+            <div>
+              <span class="tiny-label">EDITOR'S PICK</span>
+              <h2 id="featuredName">공간을 불러오는 중입니다</h2>
+            </div>
+            <div class="featured-meta">
+              <span id="featuredDistrict">대구</span>
+              <span id="featuredArea">0㎡</span>
+              <span id="featuredRent">월 0만원</span>
+            </div>
+          </div>
+        </article>
+        <div class="hero-note">
+          <span>공간의 가능성</span>
+          <strong>비어 있음이<br>끝은 아니니까.</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="discovery" id="discover">
+      <div class="section-kicker"><span>01</span> FIND YOUR SPACE</div>
+      <div class="section-heading">
+        <div>
+          <h2>어떤 공간을 찾고 있나요?</h2>
+          <p>지역부터 쓰임까지, 필요한 조건만 골라보세요.</p>
+        </div>
+        <button class="recommend-banner-button" type="button" data-action="open-recommend">
+          <span class="spark">✦</span>
+          조건 고르기 어렵다면
+          <strong>맞춤 추천 시작</strong>
+          <span>→</span>
+        </button>
+      </div>
+
+      <div class="search-console">
+        <label class="main-search">
+          <span aria-hidden="true">⌕</span>
+          <input id="searchInput" type="search" placeholder="공간명, 동네, 키워드로 검색" autocomplete="off">
+        </label>
+        <button class="filter-toggle" id="filterToggle" type="button" aria-expanded="false">
+          세부 조건 <span>＋</span>
+        </button>
+        <button class="search-submit" id="searchSubmit" type="button">검색</button>
+      </div>
+
+      <div class="district-row" id="districtChips" aria-label="지역 선택"></div>
+
+      <div class="filter-panel" id="filterPanel" aria-hidden="true">
+        <label>
+          <span>활용 목적</span>
+          <select id="categoryFilter">
+            <option value="ALL">전체 목적</option>
+          </select>
+        </label>
+        <label>
+          <span>월 최대 예산</span>
+          <select id="rentFilter">
+            <option value="999">제한 없음</option>
+            <option value="20">20만원 이하</option>
+            <option value="40">40만원 이하</option>
+            <option value="60">60만원 이하</option>
+            <option value="100">100만원 이하</option>
+          </select>
+        </label>
+        <label>
+          <span>최소 면적</span>
+          <select id="areaFilter">
+            <option value="0">제한 없음</option>
+            <option value="50">50㎡ 이상</option>
+            <option value="100">100㎡ 이상</option>
+            <option value="150">150㎡ 이상</option>
+          </select>
+        </label>
+        <label class="check-label">
+          <input id="parkingFilter" type="checkbox">
+          <span class="custom-check"></span>
+          주차 가능한 곳만
+        </label>
+        <button type="button" id="resetFilters">조건 초기화</button>
+      </div>
+
+      <div class="catalog-toolbar">
+        <p><strong id="resultCount">0</strong>개의 가능성을 찾았어요</p>
+        <label class="sort-control">
+          <span>정렬</span>
+          <select id="sortSelect">
+            <option value="recommended">추천순</option>
+            <option value="rent-low">낮은 임대료순</option>
+            <option value="area-large">넓은 면적순</option>
+            <option value="popular">인기순</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="catalog-layout">
+        <div class="space-grid" id="spaceGrid"></div>
+        <aside class="curation-aside">
+          <div class="aside-number">DAEGU<br>09</div>
+          <p class="aside-caption">구·군마다 다른<br>공간의 표정을 만나보세요.</p>
+          <div class="district-list" id="districtStats"></div>
+          <button type="button" data-action="show-map">지도에서 한눈에 보기 <span>↗</span></button>
+        </aside>
+      </div>
+      <nav class="pagination" id="spacePagination" aria-label="공간 목록 페이지"></nav>
+    </section>
+
+    <section class="map-section" id="mapSection">
+      <div class="map-copy">
+        <div class="section-kicker light"><span>02</span> EXPLORE DAEGU</div>
+        <h2>동네를 먼저<br>살펴볼까요?</h2>
+        <p>지도 위 점 하나하나가<br>새로운 일을 기다리는 공간입니다.</p>
+        <div class="map-legend">
+          <span><i class="legend-dot available"></i> 이용 가능</span>
+          <span><i class="legend-dot waiting"></i> 준비 중</span>
+        </div>
+      </div>
+      <div class="map-stage">
+        <div id="map" aria-label="대구 유휴공간 지도"></div>
+        <div class="map-result-card" id="mapResultCard">
+          <span>지도 속 공간</span>
+          <strong id="mapSpaceCount">12곳</strong>
+          <button type="button" data-action="scroll-discover">목록으로 보기 →</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="guide-section" id="guide">
+      <div class="section-kicker"><span>03</span> HOW IT WORKS</div>
+      <div class="guide-heading">
+        <h2>마음에 드는 공간을<br>만나는 세 단계</h2>
+        <p>복잡한 공공시설 이용 과정을<br>찾기 쉽고, 이해하기 쉽게 바꿨습니다.</p>
+      </div>
+      <ol class="guide-steps">
+        <li>
+          <span class="step-number">01</span>
+          <div class="step-symbol symbol-search">⌕</div>
+          <h3>조건으로 발견하기</h3>
+          <p>지역, 예산, 면적과 목적을 고르면 맞는 공간만 보여드려요.</p>
+        </li>
+        <li>
+          <span class="step-number">02</span>
+          <div class="step-symbol symbol-visit">⌂</div>
+          <h3>직접 확인하기</h3>
+          <p>사진과 시설 정보를 비교하고 원하는 날짜에 방문을 신청하세요.</p>
+        </li>
+        <li>
+          <span class="step-number">03</span>
+          <div class="step-symbol symbol-start">↗</div>
+          <h3>새로운 일 시작하기</h3>
+          <p>관리기관 검토와 승인 후 공간에서 다음 가능성을 펼쳐보세요.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="closing-cta">
+      <div>
+        <span>아직 어떤 공간이 맞을지 모르겠다면</span>
+        <h2>당신의 계획부터<br>들려주세요.</h2>
+      </div>
+      <button type="button" data-action="open-recommend">
+        <span>✦</span>
+        맞춤 공간 추천받기
+        <i>→</i>
+      </button>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-brand">
+      <span class="brand-mark small" aria-hidden="true"><span></span><span></span><span></span></span>
+      <strong>다시, 공간</strong>
+      <p>대구광역시 유휴시설 추천 및 매칭 플랫폼</p>
+    </div>
+    <div class="footer-links">
+      <a href="#discover">공간 찾기</a>
+      <button type="button" data-action="open-recommend">맞춤 추천</button>
+      <button type="button" data-action="open-admin">운영센터</button>
+    </div>
+    <p class="copyright">© 2026 다시, 공간 · Python Team 1</p>
+  </footer>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="favorites-drawer" id="favoritesDrawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div><span>MY PICKS</span><h2>저장한 공간</h2></div>
+      <button type="button" data-action="close-favorites" aria-label="닫기">×</button>
+    </div>
+    <div class="drawer-content" id="favoritesList"></div>
+  </aside>
+
+  <div class="modal" id="detailModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="공간 상세정보">
+    <div class="modal-shell detail-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="닫기">×</button>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <div class="modal" id="recommendModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="맞춤 공간 추천">
+    <div class="modal-shell recommend-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="닫기">×</button>
+      <div class="recommend-intro">
+        <span class="modal-label">1 MINUTE CURATION</span>
+        <h2>당신에게 맞는<br>공간을 찾아볼게요.</h2>
+        <p>네 가지 조건만 선택하면 적합도와 추천 이유를 계산합니다.</p>
+      </div>
+      <form id="recommendForm" class="recommend-form">
+        <label><span>어디를 선호하나요?</span><select id="recommendDistrict"><option value="ALL">대구 전역</option></select></label>
+        <label><span>무엇을 시작하나요?</span><select id="recommendPurpose"></select></label>
+        <label><span>월 예산은 얼마인가요?</span><select id="recommendBudget"><option value="20">20만원</option><option value="40" selected>40만원</option><option value="60">60만원</option><option value="100">100만원</option></select></label>
+        <label><span>필요한 최소 면적은?</span><select id="recommendArea"><option value="30">30㎡</option><option value="50" selected>50㎡</option><option value="100">100㎡</option><option value="150">150㎡</option></select></label>
+        <label class="recommend-check"><input id="recommendParking" type="checkbox"><span>주차 공간이 꼭 필요해요</span></label>
+        <button class="button button-cobalt" type="submit">내 공간 계산하기 <span>→</span></button>
+      </form>
+      <div class="recommend-results" id="recommendResults" hidden></div>
+    </div>
+  </div>
+
+  <div class="modal" id="applyModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="방문 및 이용 신청">
+    <div class="modal-shell apply-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="닫기">×</button>
+      <span class="modal-label">SPACE REQUEST</span>
+      <h2 id="applyTitle">공간 방문 신청</h2>
+      <p id="applySpaceName"></p>
+      <form id="applyForm">
+        <input type="hidden" id="applySpaceId">
+        <div class="form-grid">
+          <label><span>이름</span><input id="applicantName" required placeholder="신청자 이름"></label>
+          <label><span>연락처</span><input id="applicantPhone" required placeholder="010-0000-0000"></label>
+        </div>
+        <label><span>방문 희망일</span><input id="visitDate" type="date" required></label>
+        <label><span>공간에서 하고 싶은 일</span><textarea id="applyMessage" required rows="4" placeholder="활용 목적과 계획을 간단히 적어주세요."></textarea></label>
+        <button class="button button-dark wide" type="submit">신청서 보내기 <span>→</span></button>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="adminModal" aria-hidden="true" role="dialog" aria-modal="true" aria-label="운영센터">
+    <div class="modal-shell admin-shell">
+      <button class="modal-close" type="button" data-close-modal aria-label="닫기">×</button>
+      <div class="admin-heading">
+        <div><span class="modal-label">OPERATION CENTER</span><h2>공간 운영 현황</h2></div>
+        <button type="button" id="syncData">공공데이터 동기화 ↻</button>
+      </div>
+      <div class="admin-metrics" id="adminMetrics"></div>
+      <div class="admin-table-wrap">
+        <table>
+          <thead><tr><th>공간</th><th>지역</th><th>월 임대료</th><th>상태</th></tr></thead>
+          <tbody id="adminSpaceRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

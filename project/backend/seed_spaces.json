@@ -1,0 +1,398 @@
+[
+  {
+    "id": "SPC-001",
+    "name": "삼덕 청년 예술창작 유휴창고",
+    "address": "대구광역시 중구 삼덕동2가 149-1",
+    "district": "중구",
+    "category": "ART",
+    "category_name": "문화·예술",
+    "area": 142.5,
+    "deposit": 500,
+    "monthly_rent": 35,
+    "maintenance_fee": 5,
+    "parking": true,
+    "parking_spaces": 4,
+    "lat": 35.8642,
+    "lng": 128.6045,
+    "main_image_url": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1000&q=80",
+    "description": "삼덕동 카페 골목 인근에 위치한 구 양곡 창고를 청년 예술인 및 문화 전시용으로 개방한 공간입니다. 4.8m의 높은 층고와 노출 콘크리트 마감으로 회화, 조각, 미디어아트 전시 및 소규모 복합문화 공연장으로 최적입니다.",
+    "floor": "지상 1층 (단독 창고형)",
+    "building_structure": "철골 콘크리트조 (층고 4.8m)",
+    "remodeling_status": "SUPPORT_ELIGIBLE",
+    "remodeling_support": "대구 중구 도시재생 리모델링 보조금 최대 1,500만원 지원 대상",
+    "managing_agency": "대구광역시 중구 도시재생지원센터",
+    "agency_contact": "053-661-2851",
+    "transport_info": "대구 2호선 경대병원역 4번 출구 도보 5분",
+    "utilities": [
+      "수도",
+      "전기(30kW 증설)",
+      "개별 화장실",
+      "광케이블 인터넷",
+      "자체 진입로"
+    ],
+    "tags": [
+      "높은 층고",
+      "전시/공연",
+      "예술가 특화",
+      "주차 완비",
+      "도시재생 지원"
+    ],
+    "features": [
+      "자연 채광용 천창 설치 완료",
+      "대형 화물 반입 가능한 슬라이딩 도어",
+      "대구시 청년예술인 창작공간 임대료 50% 감면 지원 혜택 적용 가능"
+    ],
+    "available_from": null,
+    "source_name": "프로젝트 시연 샘플",
+    "source_url": null,
+    "source_updated_at": null,
+    "status": "AVAILABLE",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "삼덕 청년 예술창작 유휴창고 이미지 1",
+        "sort_order": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "삼덕 청년 예술창작 유휴창고 이미지 2",
+        "sort_order": 1
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "삼덕 청년 예술창작 유휴창고 이미지 3",
+        "sort_order": 2
+      }
+    ]
+  },
+  {
+    "id": "SPC-002",
+    "name": "복현 혁신 청년 스타트업 코워킹 베이스",
+    "address": "대구광역시 북구 복현동 340-12",
+    "district": "북구",
+    "category": "STARTUP",
+    "category_name": "청년 창업",
+    "area": 88,
+    "deposit": 300,
+    "monthly_rent": 20,
+    "maintenance_fee": 8,
+    "parking": true,
+    "parking_spaces": 6,
+    "lat": 35.8925,
+    "lng": 128.6189,
+    "main_image_url": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80",
+    "description": "경북대학교 북문 인근의 장기 공실 상가 건물을 청년 IT/테크 스타트업을 위해 스마트 오피스로 전면 개조한 유휴시설입니다. 데스크, 초고속 유무선망, 회의실 시설이 완비되어 있어 즉시 입주 가능합니다.",
+    "floor": "지상 2층",
+    "building_structure": "철근콘크리트 구조",
+    "remodeling_status": "COMPLETED",
+    "remodeling_support": "2025년 대구시 청년창업공간 뉴딜사업으로 전면 리모델링 완료",
+    "managing_agency": "대구창조경제혁신센터 / 경북대 도시재생추진단",
+    "agency_contact": "053-759-6380",
+    "transport_info": "경북대학교 북문 도보 3분, 버스정류장 1분",
+    "utilities": [
+      "중앙 냉난방",
+      "초고속 GiGA 인터넷",
+      "회의실(빔프로젝터)",
+      "공용 탕비실",
+      "도어락"
+    ],
+    "tags": [
+      "스타트업",
+      "경북대 인접",
+      "리모델링 완료",
+      "저렴한 임대료",
+      "회의실 구비"
+    ],
+    "features": [
+      "모든 사무가구(데스크, 인체공학 의자) 무상 대여",
+      "초기 창업팀 전담 멘토링 프로그램 연계",
+      "대구 청년창업 펀드 IR 데모데이 우선 참가 기회"
+    ],
+    "available_from": null,
+    "source_name": "프로젝트 시연 샘플",
+    "source_url": null,
+    "source_updated_at": null,
+    "status": "AVAILABLE",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "복현 혁신 청년 스타트업 코워킹 베이스 이미지 1",
+        "sort_order": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "복현 혁신 청년 스타트업 코워킹 베이스 이미지 2",
+        "sort_order": 1
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1527192491265-7e15c55b1ed2?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "복현 혁신 청년 스타트업 코워킹 베이스 이미지 3",
+        "sort_order": 2
+      }
+    ]
+  },
+  {
+    "id": "SPC-003",
+    "name": "대명동 음악·영상 복합 창작 스튜디오",
+    "address": "대구광역시 남구 대명동 1892-5",
+    "district": "남구",
+    "category": "WORKSHOP",
+    "category_name": "작업실",
+    "area": 115.7,
+    "deposit": 400,
+    "monthly_rent": 30,
+    "maintenance_fee": 4,
+    "parking": false,
+    "parking_spaces": 0,
+    "lat": 35.8532,
+    "lng": 128.5831,
+    "main_image_url": "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1000&q=80",
+    "description": "대명동 공연예술문화거리 내 위치한 유휴 지하공간입니다. 층고가 높고 소음 민원이 적어 음악 레코딩, 밴드 합주, 유튜브 영상 촬영, 공예 가공 등 소음이 발생하는 창작 작업실로 최적화되어 있습니다.",
+    "floor": "지하 1층 (방음 특화)",
+    "building_structure": "철근콘크리트 라멘조",
+    "remodeling_status": "SUPPORT_ELIGIBLE",
+    "remodeling_support": "남구 대명공연문화거리 방음공사 지원사업 연계 가능",
+    "managing_agency": "대구광역시 남구 문화관광과",
+    "agency_contact": "053-664-2173",
+    "transport_info": "대구 1호선 영대병원역 3번 출구 도보 7분, 대명공연거리 중심부",
+    "utilities": [
+      "기본 흡음재 시공",
+      "3상 380V 전력",
+      "독립 환기시설",
+      "수도설비",
+      "보안 CCTV"
+    ],
+    "tags": [
+      "방음 특화",
+      "음악/영상 작업",
+      "공연거리",
+      "24시간 이용",
+      "저렴한 월세"
+    ],
+    "features": [
+      "24시간 제약 없는 자유로운 창작 활동 보장",
+      "대명공연예술제 및 지역 축제 협업 연계",
+      "기본 전기용량 증설 완료로 고전력 장비 운용 용이"
+    ],
+    "available_from": null,
+    "source_name": "프로젝트 시연 샘플",
+    "source_url": null,
+    "source_updated_at": null,
+    "status": "AVAILABLE",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "대명동 음악·영상 복합 창작 스튜디오 이미지 1",
+        "sort_order": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "대명동 음악·영상 복합 창작 스튜디오 이미지 2",
+        "sort_order": 1
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "대명동 음악·영상 복합 창작 스튜디오 이미지 3",
+        "sort_order": 2
+      }
+    ]
+  },
+  {
+    "id": "SPC-004",
+    "name": "동성로 르네상스 팝업 & 소상공인 스토어",
+    "address": "대구광역시 중구 동성로2가 88-3",
+    "district": "중구",
+    "category": "SHOP",
+    "category_name": "소규모 상점",
+    "area": 52.8,
+    "deposit": 1000,
+    "monthly_rent": 60,
+    "maintenance_fee": 10,
+    "parking": false,
+    "parking_spaces": 0,
+    "lat": 35.8698,
+    "lng": 128.5962,
+    "main_image_url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80",
+    "description": "동성로 핵심 상권 내 유휴 공실 점포를 청년 브랜드 팝업스토어 및 로컬 크리에이터 편집숍으로 지원하기 위한 공간입니다. 풍부한 유동인구와 뛰어난 집객력을 바탕으로 브랜드 런칭에 최적입니다.",
+    "floor": "지상 1층 (가시성 우수 통유리)",
+    "building_structure": "조적조 및 글래스 파사드",
+    "remodeling_status": "PARTIAL",
+    "remodeling_support": "동성로 르네상스 프로젝트 상가 인테리어 500만원 바우처 제공",
+    "managing_agency": "대구광역시 원도심재생과",
+    "agency_contact": "053-803-3921",
+    "transport_info": "대구 1·2호선 반월당역 13번 출구 도보 4분 / 중앙로역 2번 출구 도보 3분",
+    "utilities": [
+      "쇼룸형 LED 조명",
+      "시스템 에어컨",
+      "수도시설",
+      "POS 설치대",
+      "통유리 쇼윈도"
+    ],
+    "tags": [
+      "동성로 중심가",
+      "유동인구 최다",
+      "팝업스토어",
+      "소상공인 쇼룸",
+      "반월당역세권"
+    ],
+    "features": [
+      "통유리 전면 파사드로 시각적 노출 효과 극대화",
+      "단기 팝업(1~3개월) 및 장기 임대 유연 계약 가능",
+      "대구 로컬 청년 브랜드 페스타 우선 입점 혜택"
+    ],
+    "available_from": null,
+    "source_name": "프로젝트 시연 샘플",
+    "source_url": null,
+    "source_updated_at": null,
+    "status": "RESERVED",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "동성로 르네상스 팝업 & 소상공인 스토어 이미지 1",
+        "sort_order": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "동성로 르네상스 팝업 & 소상공인 스토어 이미지 2",
+        "sort_order": 1
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "동성로 르네상스 팝업 & 소상공인 스토어 이미지 3",
+        "sort_order": 2
+      }
+    ]
+  },
+  {
+    "id": "SPC-005",
+    "name": "비산동 행복나눔 사회적기업 복합허브",
+    "address": "대구광역시 서구 비산동 1240-8",
+    "district": "서구",
+    "category": "SOCIAL",
+    "category_name": "사회적기업",
+    "area": 198,
+    "deposit": 600,
+    "monthly_rent": 40,
+    "maintenance_fee": 7,
+    "parking": true,
+    "parking_spaces": 5,
+    "lat": 35.8785,
+    "lng": 128.5672,
+    "main_image_url": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1000&q=80",
+    "description": "서구 원도심 내 폐원된 옛 어린이집 건물을 사회적경제기업, 협동조합, 마을공동체를 위한 복합 공간으로 재생했습니다. 1층은 주민 카페 및 교육장, 2층은 사무실 및 작업장으로 구성 가능합니다.",
+    "floor": "지상 1~2층 전체",
+    "building_structure": "철근콘크리트 2층 건물",
+    "remodeling_status": "SUPPORT_ELIGIBLE",
+    "remodeling_support": "서구 도시재생 어울림플랫폼 개보수 지원 (최대 2,000만원)",
+    "managing_agency": "대구 서구 마을공동체지원센터",
+    "agency_contact": "053-663-2281",
+    "transport_info": "원대역(3호선) 도보 8분, 서구청 5분 거리",
+    "utilities": [
+      "엘리베이터",
+      "남녀 분리 화장실",
+      "공용 커뮤니티홀",
+      "주방 조리시설",
+      "전기 온돌"
+    ],
+    "tags": [
+      "대형 공간",
+      "사회적경제",
+      "커뮤니티 홀",
+      "마을기업",
+      "주차 공간"
+    ],
+    "features": [
+      "넓은 마당과 옥상 텃밭 공간 보유",
+      "사회적기업 인증 추진팀 임대료 추가 30% 감면",
+      "지역 주민 대상 교육 및 플리마켓 개최 가능"
+    ],
+    "available_from": null,
+    "source_name": "프로젝트 시연 샘플",
+    "source_url": null,
+    "source_updated_at": null,
+    "status": "AVAILABLE",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "비산동 행복나눔 사회적기업 복합허브 이미지 1",
+        "sort_order": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "비산동 행복나눔 사회적기업 복합허브 이미지 2",
+        "sort_order": 1
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "비산동 행복나눔 사회적기업 복합허브 이미지 3",
+        "sort_order": 2
+      }
+    ]
+  },
+  {
+    "id": "SPC-006",
+    "name": "수성 알파시티 IT·소프트웨어 공유오피스",
+    "address": "대구광역시 수성구 대흥동 820-1",
+    "district": "수성구",
+    "category": "OFFICE",
+    "category_name": "사무실",
+    "area": 72.5,
+    "deposit": 500,
+    "monthly_rent": 45,
+    "maintenance_fee": 6,
+    "parking": true,
+    "parking_spaces": 10,
+    "lat": 35.8398,
+    "lng": 128.6945,
+    "main_image_url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=80",
+    "description": "대구 대표 ICT 거점인 수성알파시티 내 공공 지원시설 유휴 층을 AI, SaaS, 게임, 웹개발 등 IT/소프트웨어 스타트업 전용 독립 사무실로 제공합니다. 최첨단 네트워크 인프라와 쾌적한 연구 환경을 자랑합니다.",
+    "floor": "지상 3층 (전망 우수)",
+    "building_structure": "최신 스마트 빌딩",
+    "remodeling_status": "COMPLETED",
+    "remodeling_support": "수성알파시티 디지털밸리 소프트웨어 인큐베이팅 지원",
+    "managing_agency": "대구디지털혁신진흥원 (DIP)",
+    "agency_contact": "053-655-7000",
+    "transport_info": "대구 2호선 대공원역 도보 10분, 수성알파시티 순환버스 2분",
+    "utilities": [
+      "서버랙실 구비",
+      "24시간 지문인식 출입",
+      "초고속 10G 전용망",
+      "개별 냉난방",
+      "샤워실"
+    ],
+    "tags": [
+      "IT기업 특화",
+      "디지털밸리",
+      "서버룸 구비",
+      "쾌적한 환경",
+      "주차 완비"
+    ],
+    "features": [
+      "클라우드 크레딧 및 GPU 연산 서버 우선 바우처 지원",
+      "DIP 주관 SW 전문 세미나 및 네트워킹 행사 무료 초청",
+      "쾌적한 건물 옥상 정원 및 휴게 라운지 이용 가능"
+    ],
+    "available_from": null,
+    "source_name": "프로젝트 시연 샘플",
+    "source_url": null,
+    "source_updated_at": null,
+    "status": "AVAILABLE",
+    "images": [
+      {
+        "url": "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "수성 알파시티 IT·소프트웨어 공유오피스 이미지 1",
+        "sort_order": 0
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "수성 알파시티 IT·소프트웨어 공유오피스 이미지 2",
+        "sort_order": 1
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1000&q=80",
+        "alt_text": "수성 알파시티 IT·소프트웨어 공유오피스 이미지 3",
+        "sort_order": 2
+      }
+    ]
+  }
+]

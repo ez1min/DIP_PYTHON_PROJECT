@@ -1,0 +1,85 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dasi-space-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://dasi_space:dasi_space@dasi-space-postgres:5432/dasi_space
+      CORS_ORIGINS: http://localhost:8010,http://127.0.0.1:8010,${PUBLIC_ORIGIN:-http://localhost:8010},${TUNNEL_ORIGIN:-http://localhost:8010}
+      ALLOWED_HOSTS: localhost,127.0.0.1,${PUBLIC_HOST:-localhost},${TUNNEL_HOST:-localhost}
+      AUTO_CREATE_TABLES: "true"
+      SEED_SPACES_ON_STARTUP: "true"
+    expose:
+      - "8000"
+    networks:
+      - frontend
+      - existing_database
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  nginx:
+    image: nginx:alpine
+    container_name: dasi-space-nginx
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      PUBLIC_HOST: ${PUBLIC_HOST:-localhost}
+      NGINX_ENVSUBST_FILTER: PUBLIC_HOST
+    ports:
+      - "${HTTP_PORT:-8010}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ${NGINX_CONFIG:-./deploy/nginx-http.conf.template}:/etc/nginx/templates/default.conf.template:ro
+      - certbot_webroot:/var/www/certbot:ro
+      - certbot_config:/etc/letsencrypt:ro
+    networks:
+      - frontend
+
+  certbot:
+    image: certbot/certbot:latest
+    profiles:
+      - tools
+    volumes:
+      - certbot_webroot:/var/www/certbot
+      - certbot_config:/etc/letsencrypt
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: dasi-space-tunnel
+    restart: unless-stopped
+    profiles:
+      - tunnel
+    command: tunnel --no-autoupdate --url http://nginx:80
+    depends_on:
+      nginx:
+        condition: service_started
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    name: dasi-space-frontend
+  existing_database:
+    external: true
+    name: 7_default
+
+volumes:
+  certbot_webroot:
+    name: dasi-space-certbot-webroot
+  certbot_config:
+    name: dasi-space-certbot-config

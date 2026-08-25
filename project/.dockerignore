@@ -1,0 +1,8 @@
+.env
+.venv
+.pytest_cache
+__pycache__
+*.py[cod]
+artifacts
+binzip/DATA/data_elec
+binzip/DATA/data_trade
